@@ -1,0 +1,15 @@
+{
+  "name": "rishwat-fyi",
+  "private": true,
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "dev": "npm run dev -w apps/api",
+    "test": "npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "db:up": "bash scripts/db-up.sh",
+    "db:migrate": "bash scripts/db-migrate.sh",
+    "db:seed": "bash scripts/db-seed.sh",
+    "create-admin": "npm run create-admin -w apps/api"
+  },
+  "engines": { "node": ">=20" }
+}

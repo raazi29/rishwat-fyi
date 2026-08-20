@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.env
+*.log
+data/evidence/
+data/exports/
+coverage/

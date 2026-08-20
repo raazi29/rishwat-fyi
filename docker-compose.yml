@@ -1,0 +1,21 @@
+services:
+  db:
+    image: postgis/postgis:16-master
+    container_name: rishwat-db
+    environment:
+      POSTGRES_USER: rishwat
+      POSTGRES_PASSWORD: rishwat_dev
+      POSTGRES_DB: rishwat
+    ports:
+      - "5432:5432"
+    volumes:
+      - rishwat_pgdata:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rishwat -d rishwat"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  rishwat_pgdata:
