@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: rishwat_dev
       POSTGRES_DB: rishwat
     ports:
-      - "5432:5432"
+      - "5434:5432"
     volumes:
       - rishwat_pgdata:/var/lib/postgresql/data
       - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
