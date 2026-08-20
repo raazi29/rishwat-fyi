@@ -1,0 +1,92 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://rishwat.fyi/schemas/report.schema.json",
+  "title": "Report Submission",
+  "description": "A citizen report of an experience with a government service in India. This schema mirrors the report submission validation in packages/validation/src/report.ts. At least one experience field must be provided: the free-text description and/or one or more of official_fee_reported_inr, additional_amount_reported_inr, amount_paid_inr, paid, delay_days, or visits. JSON Schema cannot express this exclusivity cleanly (an XOR-style requirement), so it is enforced by the API validation layer rather than by this schema; a submission that omits all experience fields is rejected by the API with a 400. Period_end must be greater than or equal to period_start (also enforced by the API). Field semantics follow the data dictionary (docs/data-dictionary.md); the machine-readable form of this schema is served alongside the public dataset and is referenced by the OpenAPI specification at /doc/openapi.json.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "service_id",
+    "state_id",
+    "district_id",
+    "period_start",
+    "period_end",
+    "description"
+  ],
+  "properties": {
+    "service_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "UUID of the government service (services.id) the report is about. See the service_slug column in the data dictionary (docs/data-dictionary.md, section 6.2)."
+    },
+    "state_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "UUID of the state where the experience happened (states.id). See the state_code and state_name columns in the data dictionary (docs/data-dictionary.md, sections 6.5-6.6)."
+    },
+    "district_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "UUID of the district where the experience happened (districts.id). See the district_name column in the data dictionary (docs/data-dictionary.md, section 6.7)."
+    },
+    "office_id": {
+      "type": ["string", "null"],
+      "format": "uuid",
+      "description": "Optional UUID of the specific office involved (offices.id). Office identifiers are internal reference data and are never exported in any dataset or API response; see docs/privacy.md."
+    },
+    "period_start": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "description": "Start of the period the report covers, as YYYY-MM-DD. See the period_start column in the data dictionary (docs/data-dictionary.md, section 6.8)."
+    },
+    "period_end": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "description": "End of the period the report covers, as YYYY-MM-DD. Must be greater than or equal to period_start, enforced by the API validation layer. See the period_end column in the data dictionary (docs/data-dictionary.md, section 6.9)."
+    },
+    "official_fee_reported_inr": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 10000000,
+      "multipleOf": 0.01,
+      "description": "The official fee for the service as reported by the citizen, in INR. Money is stored as numeric(12,2) and never as a float. See the official_fee_reported_inr column in the data dictionary (docs/data-dictionary.md, section 6.10)."
+    },
+    "additional_amount_reported_inr": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 10000000,
+      "multipleOf": 0.01,
+      "description": "The additional (unofficial) amount the citizen reports being asked to pay, in INR. A key input to the median-extra-payment aggregate. See the additional_amount_reported_inr column in the data dictionary (docs/data-dictionary.md, section 6.11)."
+    },
+    "amount_paid_inr": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 10000000,
+      "multipleOf": 0.01,
+      "description": "The total amount the citizen reports actually paying for the service, in INR. Expected to be absent or null when paid is false. See the amount_paid_inr column in the data dictionary (docs/data-dictionary.md, section 6.12)."
+    },
+    "paid": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether the citizen reports paying anything (of any kind) for the service. A reported fact, not a verdict. See the paid column in the data dictionary (docs/data-dictionary.md, section 6.13)."
+    },
+    "delay_days": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 3650,
+      "description": "The number of days the citizen reports the service taking beyond the official timeline. A key input to the median-delay aggregate. See the delay_days column in the data dictionary (docs/data-dictionary.md, section 6.14)."
+    },
+    "visits": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 50,
+      "description": "The number of office visits the citizen reports making for the service. An input to the average-visits aggregate. See the visits column in the data dictionary (docs/data-dictionary.md, section 6.15)."
+    },
+    "description": {
+      "type": "string",
+      "minLength": 30,
+      "maxLength": 5000,
+      "description": "Free-text description of the experience, 30 to 5000 characters. Personal identifiers (Aadhaar, mobile numbers, emails, card numbers) are deterministically replaced with [REDACTED] before any public exposure or export; the exported form is the redacted_description column in the data dictionary (docs/data-dictionary.md, section 6.16)."
+    }
+  }
+}

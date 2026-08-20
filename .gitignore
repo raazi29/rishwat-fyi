@@ -1,7 +1,21 @@
 node_modules/
 dist/
 .env
+.env.local
 *.log
 data/evidence/
 data/exports/
 coverage/
+
+# Next.js (apps/web)
+.next/
+out/
+next-env.d.ts
+.vercel/
+*.tsbuildinfo
+
+# Local tooling scratch space
+.tmp/
+.playwright-mcp/
+test-results/
+playwright-report/
