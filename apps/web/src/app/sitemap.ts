@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-import { listServices } from "@/lib/api";
+import { SampleFallbackDisabledError, listDepartments, listServices, listStates } from "@/lib/api";
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/$/, "");
 
@@ -13,11 +13,15 @@ interface StaticRoute {
 }
 
 /**
- * The public surface, in priority order. `/admin` is intentionally absent — it
- * is the authenticated moderator area and is disallowed in `robots.ts`.
+ * The public surface, in priority order. Deliberately absent: `/admin/*` (the
+ * authenticated moderator area, disallowed in `robots.ts`), `/report/submitted`
+ * and `/reports/[publicId]` (reporter-specific pages that carry
+ * `robots: { index: false }`).
  */
 const STATIC_ROUTES: StaticRoute[] = [
   { path: "/", changeFrequency: "daily", priority: 1 },
+  // The search page is the product's primary verb; it ranks with /services.
+  { path: "/search", changeFrequency: "daily", priority: 0.9 },
   { path: "/services", changeFrequency: "weekly", priority: 0.9 },
   { path: "/report", changeFrequency: "monthly", priority: 0.9 },
   { path: "/map", changeFrequency: "weekly", priority: 0.8 },
@@ -37,10 +41,29 @@ const STATIC_ROUTES: StaticRoute[] = [
 ];
 
 /**
- * Sitemap covering the whole public surface plus a page for every service in
- * the catalogue. Service slugs come from `listServices`; the catalogue is real
- * even when the rest of the API is absent (it falls back to the seeded sample),
- * so the enumeration is always complete.
+ * Enumerating a catalogue is best-effort: with the sample-data kill switch on
+ * (`NEXT_PUBLIC_ALLOW_SAMPLE_FALLBACK=false`) an unreachable API throws, and a
+ * sitemap that lists the static surface is far better than a build that fails
+ * or a route that 500s. Any other error is a real bug and stays unhandled.
+ */
+async function enumerate<T>(
+  load: () => Promise<{ data: T[] }>,
+  toEntry: (item: T) => MetadataRoute.Sitemap[number],
+): Promise<MetadataRoute.Sitemap> {
+  try {
+    const { data } = await load();
+    return data.map(toEntry);
+  } catch (error) {
+    if (error instanceof SampleFallbackDisabledError) return [];
+    throw error;
+  }
+}
+
+/**
+ * Sitemap covering the whole public surface plus a page for every service,
+ * state and department in the catalogue. Slugs come from the API; the
+ * catalogue is real even when the rest of the API is absent (it falls back to
+ * the seeded sample), so the enumeration is normally complete.
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const lastModified = new Date();
@@ -52,13 +75,29 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: route.priority,
   }));
 
-  const services = await listServices({ per_page: 100 });
-  const serviceEntries: MetadataRoute.Sitemap = services.data.items.map((service) => ({
-    url: `${SITE_URL}/services/${service.slug}`,
-    lastModified,
-    changeFrequency: "weekly",
-    priority: 0.8,
-  }));
+  const [serviceEntries, stateEntries, departmentEntries] = await Promise.all([
+    enumerate(
+      async () => ({ data: (await listServices({ per_page: 100 })).data.items }),
+      (service) => ({
+        url: `${SITE_URL}/services/${service.slug}`,
+        lastModified,
+        changeFrequency: "weekly" as const,
+        priority: 0.8,
+      }),
+    ),
+    enumerate(listStates, (state) => ({
+      url: `${SITE_URL}/states/${state.code}`,
+      lastModified,
+      changeFrequency: "weekly" as const,
+      priority: 0.6,
+    })),
+    enumerate(listDepartments, (department) => ({
+      url: `${SITE_URL}/departments/${department.slug}`,
+      lastModified,
+      changeFrequency: "weekly" as const,
+      priority: 0.6,
+    })),
+  ]);
 
-  return [...staticEntries, ...serviceEntries];
+  return [...staticEntries, ...serviceEntries, ...stateEntries, ...departmentEntries];
 }

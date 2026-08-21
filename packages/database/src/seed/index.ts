@@ -2,6 +2,8 @@ import { and, eq, sql } from "drizzle-orm";
 import { createDb } from "../db.js";
 import * as schema from "../schema/index.js";
 import { allStates } from "./locations/index.js";
+import { slugify } from "./locations/util.js";
+import { allOffices } from "./offices.js";
 import { allDepartments, allServices, allSources } from "./services/index.js";
 
 const url = process.env.DATABASE_URL;
@@ -105,6 +107,7 @@ async function main() {
   }
 
   // Services (by slug) with resolved department_id + fee/timeline source ids.
+  const serviceIdBySlug = new Map<string, string>();
   let newServices = 0;
   for (const svc of allServices) {
     const departmentId = deptIdBySlug.get(svc.departmentSlug);
@@ -129,7 +132,61 @@ async function main() {
           official_timeline_source_id: timelineSourceId,
         }).onConflictDoNothing({ target: schema.services.slug }).returning({ id: schema.services.id }),
     );
+    serviceIdBySlug.set(svc.slug, r.id);
     if (r.created) newServices++;
+  }
+
+  // Offices (natural key: service_id + district_id + name). References resolve
+  // against already-seeded services/states/districts; an unresolved reference is
+  // a seed bug, so throw loudly rather than silently skip. Idempotent: existing
+  // offices are found first, so a re-run inserts 0.
+  let newOffices = 0;
+  for (const off of allOffices) {
+    const serviceId = serviceIdBySlug.get(off.serviceSlug);
+    if (!serviceId) throw new Error(`Unknown service slug "${off.serviceSlug}" for office "${off.name}"`);
+
+    const [stateRow] = await db
+      .select({ id: schema.states.id })
+      .from(schema.states)
+      .where(eq(schema.states.code, off.stateCode));
+    if (!stateRow) throw new Error(`Unknown state code "${off.stateCode}" for office "${off.name}"`);
+
+    const districtCode = slugify(off.districtName);
+    const [districtRow] = await db
+      .select({ id: schema.districts.id })
+      .from(schema.districts)
+      .where(and(eq(schema.districts.state_id, stateRow.id), eq(schema.districts.code, districtCode)));
+    if (!districtRow) {
+      throw new Error(`Unknown district "${off.districtName}" (${off.stateCode}) for office "${off.name}"`);
+    }
+
+    const r = await upsertBy(
+      () =>
+        db
+          .select({ id: schema.offices.id })
+          .from(schema.offices)
+          .where(
+            and(
+              eq(schema.offices.service_id, serviceId),
+              eq(schema.offices.district_id, districtRow.id),
+              eq(schema.offices.name, off.name),
+            ),
+          ),
+      () =>
+        db
+          .insert(schema.offices)
+          .values({
+            service_id: serviceId,
+            state_id: stateRow.id,
+            district_id: districtRow.id,
+            name: off.name,
+            address: off.address ?? null,
+            // Tuple is [x, y] = [lon, lat]; null when no confident coordinate.
+            location: off.location ? [off.location.lon, off.location.lat] : null,
+          })
+          .returning({ id: schema.offices.id }),
+    );
+    if (r.created) newOffices++;
   }
 
   console.log("Seed complete (idempotent):");
@@ -139,6 +196,7 @@ async function main() {
   console.log(`  departments:       ${await tableCount(schema.departments)} total (+${newDepartments} new)`);
   console.log(`  government_sources:${await tableCount(schema.governmentSources)} total (+${newSources} new)`);
   console.log(`  services:          ${await tableCount(schema.services)} total (+${newServices} new)`);
+  console.log(`  offices:           ${await tableCount(schema.offices)} total (+${newOffices} new)`);
 
   await client.end();
   process.exit(0);

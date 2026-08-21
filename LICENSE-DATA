@@ -1,0 +1,70 @@
+Rishwat.fyi — Data License (Creative Commons Attribution 4.0 International)
+
+The datasets published by Rishwat.fyi — the CSV and JSON exports and the
+dataset snapshots served from the public API (for example
+/datasets/reports.csv and /datasets/reports.json) and the files written under
+data/exports/ — are licensed under the Creative Commons Attribution 4.0
+International License (CC BY 4.0). You are free to share and adapt this data
+for any purpose, including commercially, as long as you give appropriate
+credit and indicate if changes were made.
+
+This license applies to the DATA only. The Rishwat.fyi software — the source
+code, schemas, migrations, seed data, and everything else in this repository —
+is licensed separately under the MIT License. See the LICENSE file.
+
+
+How to attribute
+----------------
+
+When you republish or build on this data, credit the source. A minimal
+attribution is:
+
+    Data from Rishwat.fyi, licensed CC BY 4.0 — https://rishwat.fyi
+
+Where practical, link back to https://rishwat.fyi and indicate whether you
+modified the data.
+
+
+What is in the data (privacy)
+-----------------------------
+
+Citizen-submitted reports are published only in anonymized, PII-redacted,
+aggregate-safe form. The authoritative description of these protections is in
+docs/privacy.md; read that document for the full detail. The statements below
+describe what the export pipeline in this repository actually implements, and
+do not claim anything beyond it:
+
+- Only reports in publishable statuses (validated, corroborated,
+  evidence_backed, officially_acknowledged) are exported. Reports that are
+  submitted (not yet moderated), rejected, or withdrawn never appear.
+
+- Exports are built from an explicit allowlist of columns. Raw IP addresses,
+  device fingerprints, and submission tokens are never stored — only one-way
+  SHA-256 digests are — and neither those digests nor any office identifier
+  are among the exported columns. They are never selected, not merely
+  redacted.
+
+- Free-text descriptions are passed through a deterministic redaction pipeline
+  (apps/api/src/utils/redaction.ts) that replaces Aadhaar numbers, Indian
+  mobile numbers, email addresses, and 16-digit card numbers with [REDACTED],
+  both at ingestion and again at export time.
+
+- Published aggregate statistics are subject to a minimum-volume threshold
+  (see docs/methodology.md), so no single report determines a public figure.
+
+This describes the protections the code implements; it is not a warranty.
+Citizen reports represent reported experiences and are not automatically
+verified findings of wrongdoing (see docs/methodology.md).
+
+
+Full license text
+------------------
+
+This file is a plain-English summary and is not a substitute for the license.
+The full legal text of CC BY 4.0 is published by Creative Commons at:
+
+    https://creativecommons.org/licenses/by/4.0/legalcode
+
+A human-readable summary (itself not a substitute for the license) is at:
+
+    https://creativecommons.org/licenses/by/4.0/

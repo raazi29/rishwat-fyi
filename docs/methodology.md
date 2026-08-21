@@ -101,6 +101,6 @@ In addition:
 
 ## Verification
 
-- **License:** Dataset exports are licensed **CC BY 4.0**; code is **MIT**. Individual files carry their own attribution.
+- **License:** Dataset exports are licensed **CC BY 4.0** (see [`LICENSE-DATA`](../LICENSE-DATA)); code is **MIT** (see [`LICENSE`](../LICENSE)). Individual files carry their own attribution.
 - **Reproducibility:** this methodology, the data dictionary (`docs/data-dictionary.md`), the schemas in `data/schemas/`, and the export scripts are all open source and version-controlled, so anyone can recompute published figures.
 - **Auditability:** every status change is recorded in `verification_events` and every moderator decision in `moderation_actions` (see [Moderation](moderation.md)); the history behind any published number can be traced.

@@ -191,10 +191,11 @@ Every service references a department. If the department doesn't exist yet, add 
 
 ```bash
 npm run db:seed
-npm run test -w packages/database   # seed.test.ts asserts the seeded count, fees, and sources
+npm run test -w packages/database   # schema.test.ts asserts the seeded counts
 ```
 
-If you add a service, update `packages/database/test/seed.test.ts` so the count assertion stays truthful. Optionally add a search/service-route test in `apps/api/test/`.
+If you add a service, update the `"has N services seeded"` assertion in
+`packages/database/test/schema.test.ts` so the count stays truthful. Optionally add a search/service-route test in `apps/api/test/`.
 
 ### 6. Keep docs in sync
 
@@ -222,7 +223,9 @@ Maintainers merge after review. The controller or maintainer commits; contributo
 
 ## Licensing
 
-- **Code:** MIT.
-- **Dataset exports:** CC BY 4.0 (attribution required).
+Code and citizen-submitted data are licensed **separately** (plan §12):
 
-By contributing, you agree to license your contributions accordingly. Never contribute data that contains personal information about other people (see [`docs/privacy.md`](privacy.md) — the do-not-publish list applies to contributors too).
+- **Code:** MIT — see [`LICENSE`](../LICENSE).
+- **Dataset exports:** CC BY 4.0, attribution required — see [`LICENSE-DATA`](../LICENSE-DATA).
+
+By contributing, you agree to license your contributions on these terms: code contributions under MIT, and any data contributions under CC BY 4.0. Never contribute data that contains personal information about other people (see [`docs/privacy.md`](privacy.md) — the do-not-publish list applies to contributors too).

@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from "node:crypto";
+import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 
 // Base36 alphabet — lowercase digits+letters — so ids match the validation
 // package's publicIdSchema: /^R-[a-z0-9]{8}$/.
@@ -12,6 +12,17 @@ export function sha256Hex(input: string | Uint8Array): string {
 /** URL-safe random token (default 24 bytes → 32-char base64url). */
 export function randomToken(bytes = 24): string {
   return randomBytes(bytes).toString("base64url");
+}
+
+/**
+ * Constant-time comparison of two hex digests. Use this whenever a
+ * submitter-supplied secret is checked against a stored digest, so response
+ * timing never leaks how much of the value matched.
+ */
+export function digestEquals(a: string, b: string): boolean {
+  const ab = Buffer.from(a);
+  const bb = Buffer.from(b);
+  return ab.length === bb.length && timingSafeEqual(ab, bb);
 }
 
 /** Public report identifier: "R-" + 8 base36 chars, e.g. "R-a1b2c3d4". */

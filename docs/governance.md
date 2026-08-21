@@ -45,6 +45,15 @@ A pay-to-remove scheme destroys the product's legitimacy. It is not simply disfa
 
 The same logic extends to monetizing individual allegations: the platform does not sell prominence, placement, or favorable treatment of any allegation. It publishes aggregates, not accusations, and it does not accept money to make an accusation go away.
 
+## Licensing
+
+Openness is what makes this independence enforceable, so code and data are both openly licensed — but **separately**, because they carry different rights (plan §12):
+
+- **Code** — the API, schema, migrations, tooling, and everything else in the repository — is licensed under the **MIT License**. See [`LICENSE`](../LICENSE).
+- **Published data** — the dataset exports and snapshots — is licensed under **Creative Commons Attribution 4.0 International (CC BY 4.0)**, attribution required. See [`LICENSE-DATA`](../LICENSE-DATA).
+
+Anyone may mirror, fork, and redistribute both under these terms; a mirror that credits the source cannot be quietly cut off. See [Mirroring](mirroring.md).
+
 ## Where governance meets the data
 
 Governance is not an appendix to the project; it is load-bearing:

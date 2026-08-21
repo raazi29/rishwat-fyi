@@ -6,7 +6,12 @@ import { LockIcon } from "@/components/icons";
 import { CodeBlock } from "./code-block";
 
 export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
-export type EndpointAuth = "public" | "moderator" | "admin";
+/**
+ * `submitter` is not staff auth: it means the caller must present the one-time
+ * token handed to whoever filed the report. Anyone can call the endpoint, but
+ * only for their own report.
+ */
+export type EndpointAuth = "public" | "submitter" | "moderator" | "admin";
 
 export interface EndpointParam {
   name: string;
@@ -42,6 +47,7 @@ const METHOD_TONES: Record<HttpMethod, string> = {
 
 const AUTH_LABELS: Record<EndpointAuth, string> = {
   public: "Public",
+  submitter: "Submitter token",
   moderator: "Moderator",
   admin: "Admin",
 };

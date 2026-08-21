@@ -1,11 +1,17 @@
-import type { Context } from "hono";
 import { createMiddleware } from "hono/factory";
+import { DEFAULT_TRUSTED_PROXY_HOPS } from "../config.js";
 import { tooMany } from "../errors.js";
 import type { AppEnv } from "../env.js";
+import { clientIp } from "../utils/client-ip.js";
 
 // Simple in-memory fixed-window rate limiter. No external dependency; state is
 // per-process (fine for a single API instance — swap for a shared store when
-// horizontally scaling). Client key comes from proxy/CDN forwarding headers.
+// horizontally scaling).
+//
+// The bucket key is the trusted client IP (see utils/client-ip.ts): forwarding
+// headers are only consulted as far as `config.trustedProxyHops` allows. If the
+// key were client-controlled, rotating a fake `x-forwarded-for` would defeat both
+// the 3-per-hour report limit and the admin-login brute-force limit outright.
 
 interface Bucket {
   count: number;
@@ -17,16 +23,12 @@ export interface RateLimitOptions {
   windowMs: number;
 }
 
-function clientKey(c: Context): string {
-  const xff = c.req.header("x-forwarded-for");
-  if (xff) {
-    const first = xff.split(",")[0]?.trim();
-    if (first) return first;
-  }
-  const cf = c.req.header("cf-connecting-ip");
-  if (cf) return cf;
-  return "unknown";
-}
+/**
+ * Shared bucket for clients whose address cannot be established (no socket peer,
+ * no trusted forwarding header). They are limited together rather than let
+ * through — an unidentifiable client must not get a free lane.
+ */
+export const UNKNOWN_CLIENT_KEY = "unknown";
 
 export function rateLimiter(opts: RateLimitOptions) {
   const buckets = new Map<string, Bucket>();
@@ -41,7 +43,11 @@ export function rateLimiter(opts: RateLimitOptions) {
     }
 
     const now = Date.now();
-    const key = clientKey(c);
+    // Hops must also be read per request for the same reason as the toggle above:
+    // these limiters are module-level constants, so there is no config at import
+    // time. Missing config (unit tests mounting the middleware bare) = trust nothing.
+    const hops = config?.trustedProxyHops ?? DEFAULT_TRUSTED_PROXY_HOPS;
+    const key = clientIp(c, hops) ?? UNKNOWN_CLIENT_KEY;
 
     let bucket = buckets.get(key);
     if (!bucket || bucket.resetAt <= now) {
@@ -79,3 +85,13 @@ export const strictRateLimit = rateLimiter({ limit: 3, windowMs: HOUR });
 export const standardRateLimit = rateLimiter({ limit: 60, windowMs: MINUTE });
 /** Evidence uploads: 10 per hour. */
 export const evidenceRateLimit = rateLimiter({ limit: 10, windowMs: HOUR });
+/**
+ * Moderator/admin login. Deliberately NOT the same bucket as report submission:
+ * this needs to stop credential stuffing without locking a legitimate operator
+ * out for an hour over a couple of typos. The key is the client IP, so a whole
+ * office behind one NAT shares this bucket — 3/hour would be unusable there.
+ * 10 attempts per 15 minutes still makes online password guessing hopeless
+ * (bcrypt cost 10 already makes each attempt expensive) while leaving room for
+ * ordinary human error.
+ */
+export const authRateLimit = rateLimiter({ limit: 10, windowMs: 15 * MINUTE });

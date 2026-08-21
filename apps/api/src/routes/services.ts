@@ -101,6 +101,7 @@ services.get("/:slug", async (c) => {
   const citizen = await serviceAggregates(db, row.id);
 
   return c.json({
+    id: row.id,
     slug: row.slug,
     name: row.name,
     description: row.description,

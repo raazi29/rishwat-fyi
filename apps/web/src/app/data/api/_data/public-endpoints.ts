@@ -182,7 +182,7 @@ const postReport: EndpointSpec = {
   auth: "public",
   rateLimit: "3 / hour",
   summary:
-    "Submit an anonymous citizen report. On success the response contains a one-time submission_token — the reporter must keep it to check status later; only its sha256 digest is stored. At least one experience field must be present.",
+    "Submit an anonymous citizen report. On success the response contains a one-time token — the reporter must keep it to check status later; only its sha256 digest is stored. At least one experience field must be present.",
   params: [
     { name: "service_id", type: "uuid", required: true, notes: "an existing service" },
     { name: "state_id", type: "uuid", required: true, notes: "an existing state" },
@@ -212,7 +212,7 @@ const postReport: EndpointSpec = {
   "description": "Applied for a new licence; was asked for an additional amount to avoid a further visit."
 }`,
   requestLabel: "Request body",
-  response: `{ "public_id": "R-a1b2c3d4", "status": "submitted", "submission_token": "<one-time>" }`,
+  response: `{ "public_id": "R-a1b2c3d4", "token": "<one-time>", "status": "submitted" }`,
   responseLabel: "Response 201",
   note:
     "public_id matches R-[a-z0-9]{8}. Unknown service_id / state_id / district_id returns 404; a description shorter than 30 characters, a negative fee, or period_end < period_start returns 400. The submitter's IP and any x-device-fingerprint header are hashed to sha256 — raw identifiers are never stored or returned.",
@@ -226,7 +226,7 @@ const reportStatus: EndpointSpec = {
   summary: "Status lookup for a reporter, authenticated by the one-time token (the server compares the sha256 of the provided token with the stored digest).",
   params: [
     { name: "publicId", type: "string (path)", required: true, notes: "the report public id" },
-    { name: "token", type: "string (query)", required: true, notes: "the one-time submission_token" },
+    { name: "token", type: "string (query)", required: true, notes: "the one-time token" },
   ],
   response: `{ "public_id": "R-a1b2c3d4", "status": "validated", "status_changed_at": "2026-08-20T00:00:00.000Z" }`,
   responseLabel: "Response 200",
@@ -267,14 +267,19 @@ const postEvidence: EndpointSpec = {
   id: "post-evidence",
   method: "POST",
   path: "/evidence",
-  auth: "public",
+  auth: "submitter",
   rateLimit: "10 / hour",
   summary:
-    "Upload a supporting file for a report. Body is multipart/form-data; the file part must be a File ≤ 20 MB. The file is stored under a private key, its sha256 is recorded, and the evidence row is created in status pending_review with retention_until = now + 90 days.",
-  params: [{ name: "file", type: "multipart/form-data", required: true, notes: "a File ≤ 20 MB" }],
+    "Upload a supporting file for a report. Body is multipart/form-data; the file part must be a File ≤ 20 MB. Only the submitter may attach evidence, so the one-time token from POST /reports is required alongside the report id. The file is stored under a private key, its sha256 is recorded, and the evidence row is created in status pending_review with retention_until = now + 90 days.",
+  params: [
+    { name: "file", type: "multipart/form-data", required: true, notes: "a File ≤ 20 MB" },
+    { name: "token", type: "string (form)", required: true, notes: "the one-time token from POST /reports" },
+    { name: "public_id", type: "string (form)", required: false, notes: "R-xxxxxxxx — use this or report_id" },
+    { name: "report_id", type: "uuid (form)", required: false, notes: "internal id — use this or public_id" },
+  ],
   response: `{ "id": "<uuid>", "status": "pending_review", "retention_until": "2026-11-18T00:00:00.000Z" }`,
   responseLabel: "Response 201",
-  note: "Oversized files (> 20 MB), missing file parts, or evidence for an unknown report return 400/404. Evidence is reviewed by moderators and auto-deleted after retention expires.",
+  note: "Oversized files (> 20 MB) and missing file parts return 400. A wrong token and an unknown report both return 404, so this endpoint cannot be used to probe whether a report exists. Evidence is reviewed by moderators and auto-deleted after retention expires.",
 };
 
 const evidenceMeta: EndpointSpec = {
@@ -306,7 +311,7 @@ const datasets: EndpointSpec = {
     { "name": "reports", "format": "json", "url": "/datasets/reports.json" }
   ],
   "generated_at": "2026-08-20T00:00:00.000Z",
-  "license": "CC BY 4.0 (data) / MIT (code) — see docs/methodology.md",
+  "license": "Data: CC BY 4.0 (see LICENSE-DATA). Code: MIT (see LICENSE).",
   "notice": "Citizen reports represent reported experiences and are not automatically verified findings of wrongdoing."
 }`,
   responseLabel: "Response 200",

@@ -159,9 +159,15 @@ export interface DepartmentRef {
   category: string;
 }
 
-/** `POST /reports` body — validated by `reportSubmissionSchema`. */
+/**
+ * `POST /reports` body — validated by `reportSubmissionSchema`.
+ *
+ * The service is identified by EITHER `service_id` (uuid) OR `service_slug`
+ * (the public slug); exactly one is required. The wizard sends `service_id`.
+ */
 export interface ReportSubmission {
-  service_id: string;
+  service_id?: string;
+  service_slug?: string;
   state_id: string;
   district_id: string;
   office_id?: string;
@@ -180,7 +186,7 @@ export interface ReportSubmissionResponse {
   public_id: string;
   status: ReportStatus;
   /** One-time token. Only its sha256 digest is stored server-side. */
-  submission_token: string;
+  token: string;
 }
 
 export interface ReportStatusResponse {

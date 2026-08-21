@@ -1,0 +1,105 @@
+name: Government-source correction
+description: An official fee, timeline, required-document list or source URL shown on the site is wrong or out of date.
+title: "[correction] "
+labels: ["correction", "data"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Every official figure on Rishwat.fyi must trace back to a government source (plan §14: never present a government fee without knowing where it came from). If a figure is wrong, the source is stale, or the link is dead, this is the form.
+
+        **This form is for the OFFICIAL figures only** — what the government says a service costs, takes, or requires. It is not for citizen-reported experiences; those go through the site's `/report` flow.
+
+        A correction is only actionable with a government source URL. Please do not file one without it.
+  - type: input
+    id: service
+    attributes:
+      label: Service
+      description: The service slug or name as shown on the site, e.g. `driving-licence`.
+    validations:
+      required: true
+  - type: input
+    id: location
+    attributes:
+      label: State / district this applies to
+      description: Many fees are state-specific. Say which state the correct figure applies to, or write "all India" if it is a national figure.
+    validations:
+      required: true
+  - type: dropdown
+    id: field
+    attributes:
+      label: What is wrong
+      options:
+        - Official fee
+        - Official timeline (days)
+        - Official number of visits
+        - Required-document list
+        - Process steps
+        - Source URL is dead, moved, or points at the wrong page
+        - Department or authority is wrong
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: currently-shown
+    attributes:
+      label: What the site currently shows
+      description: Copy the incorrect value exactly, and link the page it appears on.
+    validations:
+      required: true
+  - type: textarea
+    id: correct-value
+    attributes:
+      label: What the correct value is
+      description: The corrected fee in INR, the corrected timeline in days, the corrected document list, and so on.
+    validations:
+      required: true
+  - type: input
+    id: source-url
+    attributes:
+      label: Government source URL
+      description: >-
+        Required. A link to the official government page, notification, gazette or fee schedule that establishes the
+        corrected value — for example a `.gov.in` portal or a state department circular. News articles, blog posts and
+        forum threads are not sources for an official figure.
+      placeholder: https://
+    validations:
+      required: true
+  - type: input
+    id: source-title
+    attributes:
+      label: Source title
+      description: The title of the page or document, as it appears at that URL.
+    validations:
+      required: true
+  - type: input
+    id: source-department
+    attributes:
+      label: Issuing department or authority
+      placeholder: e.g. Transport Department (RTO)
+    validations:
+      required: true
+  - type: input
+    id: publication-date
+    attributes:
+      label: Publication or effective date (YYYY-MM-DD)
+      description: When the government published the figure, or when it took effect. Leave blank if the source shows no date.
+      placeholder: YYYY-MM-DD
+    validations:
+      required: false
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything else reviewers should know
+      description: For example, that the fee changed on a specific date, or that it varies by vehicle class or property value.
+    validations:
+      required: false
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: Before submitting
+      options:
+        - label: The source URL above is a government source, and I have checked that it loads and contains the corrected figure.
+          required: true
+        - label: This is a correction to an official figure, not a report about my own experience of the service.
+          required: true

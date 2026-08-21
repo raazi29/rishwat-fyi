@@ -1,7 +1,7 @@
 /**
  * The post-submission "receipt" that the wizard hands to `/report/submitted`.
  *
- * It carries the `public_id`, the one-time `submission_token`, and enough
+ * It carries the `public_id`, the one-time `token`, and enough
  * context to render the confirmation screen (service, location, time). It is
  * kept in **sessionStorage**, never in the URL: the token is a one-time secret
  * shown once and only its sha256 digest is stored server-side (PRODUCT.md), so
@@ -22,6 +22,12 @@ export interface ReportReceipt {
   location: string | null;
   /** True when this is a sample confirmation (API was absent — nothing was sent). */
   sample?: boolean;
+  /**
+   * Outcome of the optional evidence upload: `true` attached, `false` failed,
+   * `undefined` no file was offered. A failed upload must be shown rather than
+   * swallowed — the reporter is the only person who still holds the file.
+   */
+  evidenceAttached?: boolean;
 }
 
 /** sessionStorage key. Cleared when the tab closes; survives a same-tab reload. */
@@ -54,6 +60,8 @@ export function loadReceipt(): ReportReceipt | null {
       serviceType: typeof parsed.serviceType === "string" ? parsed.serviceType : null,
       location: typeof parsed.location === "string" ? parsed.location : null,
       sample: parsed.sample === true,
+      // Tri-state: leave it undefined unless the wizard actually recorded one.
+      evidenceAttached: typeof parsed.evidenceAttached === "boolean" ? parsed.evidenceAttached : undefined,
     };
   } catch {
     return null;

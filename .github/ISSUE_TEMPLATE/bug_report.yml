@@ -1,0 +1,93 @@
+name: Bug report
+description: Something in the API, the site, the schema or the tooling behaves incorrectly.
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not use this form for security or privacy flaws. Report those privately using the process in `SECURITY.md` at the repository root.
+
+        Do not paste real personal data (names, phone numbers, Aadhaar, addresses, tokens) into this issue. Redact request and response bodies before pasting them.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      description: Which part of the repository is affected?
+      options:
+        - apps/api (Hono API)
+        - apps/web (frontend)
+        - packages/database (schema, migrations, seed)
+        - packages/validation (zod schemas)
+        - data (schemas, dataset exports)
+        - scripts / tooling / CI
+        - docs
+        - Not sure
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What did you observe? Include the error `code` and `message` from the API response where relevant.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected instead
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: A curl command against a local instance is ideal.
+      value: |
+        1.
+        2.
+        3.
+
+        ```bash
+        curl -s localhost:8787/...
+        ```
+    validations:
+      required: true
+  - type: input
+    id: commit
+    attributes:
+      label: Commit or branch
+      description: Output of `git rev-parse --short HEAD`, or the branch you are on.
+    validations:
+      required: false
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Node version, OS, whether you are on the Docker PostGIS database or Supabase, and the storage driver.
+      value: |
+        - Node:
+        - OS:
+        - Database: Docker PostGIS / Supabase
+        - EVIDENCE_STORAGE_DRIVER: local / supabase
+    validations:
+      required: false
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or output
+      description: Relevant, redacted logs. This is rendered as code, no backticks needed.
+      render: text
+    validations:
+      required: false
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: Before submitting
+      options:
+        - label: This is not a security or privacy vulnerability (those go through SECURITY.md).
+          required: true
+        - label: This issue contains no personal data about me or anyone else.
+          required: true
+        - label: I ran `npm run typecheck` and `npm test` and this is not a local setup problem.
+          required: false

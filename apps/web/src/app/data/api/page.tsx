@@ -106,24 +106,24 @@ export default function ApiReferencePage() {
           ]}
           rows={[
             {
-              limiter: <code className="font-mono text-ink">standardLimiter</code>,
+              limiter: <code className="font-mono text-ink">standardRateLimit</code>,
               limit: "60 / min per IP",
-              applied: "Public reads (/search, /services, /locations, /states, /departments)",
+              applied: "Public reads (/search, /services, /locations/*)",
             },
             {
-              limiter: <code className="font-mono text-ink">strictLimiter</code>,
+              limiter: <code className="font-mono text-ink">strictRateLimit</code>,
               limit: "3 / hour per IP",
-              applied: <code className="font-mono">POST /reports</code>,
+              applied: (
+                <>
+                  <code className="font-mono">POST /reports</code> and{" "}
+                  <code className="font-mono">POST /admin/auth/login</code>
+                </>
+              ),
             },
             {
-              limiter: <code className="font-mono text-ink">evidenceLimiter</code>,
+              limiter: <code className="font-mono text-ink">evidenceRateLimit</code>,
               limit: "10 / hour per IP",
               applied: <code className="font-mono">POST /evidence</code>,
-            },
-            {
-              limiter: <code className="font-mono text-ink">authLimiter</code>,
-              limit: "Dedicated per-IP limiter",
-              applied: <code className="font-mono">POST /admin/auth/login</code>,
             },
           ]}
         />

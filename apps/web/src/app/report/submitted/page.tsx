@@ -24,7 +24,7 @@ function buildSampleReceipt(): ReportReceipt | null {
   if (!sampleFallbackAllowed()) return null;
   return {
     publicId: sampleSubmissionResponse.public_id,
-    token: sampleSubmissionResponse.submission_token,
+    token: sampleSubmissionResponse.token,
     status: sampleSubmissionResponse.status,
     submittedAt: "2026-08-20T06:12:00.000Z",
     serviceName: "Driving Licence",

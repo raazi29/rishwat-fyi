@@ -40,7 +40,7 @@ export async function submitReportAction(payload: ReportSubmission): Promise<Sub
     return {
       ok: true,
       publicId: result.data.public_id,
-      token: result.data.submission_token,
+      token: result.data.token,
       status: result.data.status,
     };
   }

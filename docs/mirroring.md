@@ -19,14 +19,16 @@ The project publishes, without authentication:
 - **The source code** — the full repository, including the methodology, moderation rules, and seed data
 - **This documentation** — every `docs/` file
 
-Nothing a mirror needs is behind a login. The dataset endpoints are served with `Cache-Control: no-store` so mirrors can always fetch fresh copies.
+Nothing a mirror needs is behind a login. The dataset endpoints are served with `Cache-Control: public, max-age=300`, so mirrors — and any CDN in front of them — can fetch and cache fresh copies efficiently.
 
 ## License
 
-- **Dataset rows (the exports):** CC BY 4.0 — attribution required. Mirrors may republish the data as long as they credit the source.
-- **Code and schemas (everything in this repository):** MIT — mirrors and forks may reuse, modify, and redistribute freely.
+A mirror operator may redistribute everything the project publishes, under two separate licenses:
 
-See [`docs/methodology.md`](methodology.md) for the full terms.
+- **Dataset rows (the exports and snapshots):** CC BY 4.0 — you may republish and adapt the data, including commercially, as long as you credit the source. Use the attribution *"Data from Rishwat.fyi, licensed CC BY 4.0"* and, where practical, link back to https://rishwat.fyi. See [`LICENSE-DATA`](../LICENSE-DATA).
+- **Code, schemas, and docs (everything else in this repository):** MIT — mirrors and forks may reuse, modify, and redistribute freely, provided the copyright and permission notice is kept. See [`LICENSE`](../LICENSE).
+
+The full CC BY 4.0 legal text is at <https://creativecommons.org/licenses/by/4.0/legalcode>; the code terms are in [`LICENSE`](../LICENSE).
 
 ## How to mirror
 
@@ -61,7 +63,7 @@ cp .env.example .env          # set DATABASE_URL, TEST_DATABASE_URL, JWT_SECRET
 bash scripts/db-up.sh
 npm run db:migrate
 npm run db:seed
-npm run export -w apps/api    # writes data/exports/reports-<YYYY-MM-DD>.csv/.json + manifest.json
+npm run export -w apps/api    # writes data/exports/rishwat-reports-<YYYY-MM-DD>.csv/.json + manifest.json
 ```
 
 The export script runs the same `exportRows` query the API uses, applies the same redaction, and writes a manifest next to the files. Any fork can regenerate the dataset from its own database at any time.
@@ -72,16 +74,21 @@ For maximum independence, mirror the repository itself (a plain `git clone`, or 
 
 ## The mirror manifest
 
-Every export is accompanied by a `manifest.json` describing what was produced. The manifest is the standard way for mirrors to tell readers when a snapshot was generated and what it contains. It is written by `apps/api/scripts/export-dataset.ts` next to the export files, and includes at minimum:
+Every export is accompanied by a `manifest.json` describing what was produced. The manifest is the standard way for mirrors to tell readers when a snapshot was generated and what it contains. It is written by `apps/api/src/scripts/export-dataset.ts` next to the export files:
 
 ```json
 {
   "generated_at": "2026-08-20T00:00:00.000Z",
   "counts": { "reports": 1243 },
   "schema_version": "1.0",
+  "columns": [
+    "public_id",
+    "service_slug",
+    "..."
+  ],
   "files": [
-    "reports-2026-08-20.csv",
-    "reports-2026-08-20.json"
+    "rishwat-reports-2026-08-20.csv",
+    "rishwat-reports-2026-08-20.json"
   ]
 }
 ```
@@ -91,6 +98,7 @@ Every export is accompanied by a `manifest.json` describing what was produced. T
 | `generated_at` | ISO 8601 UTC timestamp of when the snapshot was produced |
 | `counts` | Row counts per dataset (e.g. `reports`) |
 | `schema_version` | Version of the export schema, so consumers can detect breaking changes |
+| `columns` | The export column order, which is part of the dataset contract |
 | `files` | The export files included in this snapshot |
 
 Mirrors should publish their manifest at a stable, predictable URL (e.g. `/manifest.json`) so automated consumers can discover the latest snapshot and its `generated_at`.
@@ -101,7 +109,7 @@ What a mirror receives is exactly what the public API serves, and nothing more:
 
 - **No PII by construction.** Exports are built from an explicit allowlist of columns. Raw IP hashes, device fingerprints, submission token hashes, and office identifiers are structurally excluded — they are not redacted, they are never selected. See the data dictionary (§4 "Fields that are NEVER exported") and [`docs/privacy.md`](privacy.md).
 - **Only published reports.** Exports contain only reports in publishable statuses (`validated`, `corroborated`, `evidence_backed`, `officially_acknowledged`). `submitted`, `rejected`, and `withdrawn` reports never appear. See [`docs/data-dictionary.md`](data-dictionary.md) and [`docs/methodology.md`](methodology.md).
-- **Descriptions are redacted.** The `redacted_description` column has Aadhaar, mobile numbers, emails, and card numbers replaced with `[REDACTED]` before export.
+- **Descriptions are redacted.** The `description` column has Aadhaar, mobile numbers, emails, and card numbers replaced with `[REDACTED]` before export.
 - **No authentication required.** Dataset endpoints and the OpenAPI spec are public, so a mirror never depends on credentials or on a specific operator's goodwill.
 - **Reproducible.** Because the schema, methodology, redaction code, and export scripts are open source and version-controlled, a mirror can regenerate and verify the dataset independently — it does not have to trust the numbers on the live site.
 - **Survival.** A mirror is a read-only copy and therefore cannot be censored, "quietly erased", or taken offline by pressure on the original operator. That is the point: the data is the infrastructure, and infrastructure must be replicable.

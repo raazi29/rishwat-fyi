@@ -22,10 +22,13 @@ This document is the human-readable companion. When the two disagree, the OpenAP
 
 | Limiter | Limit | Applied to |
 | --- | --- | --- |
-| `standardLimiter` | 60 requests / minute per IP | Public read endpoints (`/search`, `/services`, `/locations`, `/states`, `/departments`) |
-| `strictLimiter` | 3 requests / hour per IP | `POST /reports` |
-| `evidenceLimiter` | 10 requests / hour per IP | `POST /evidence` |
-| `authLimiter` | Dedicated per-IP limiter on the login endpoint | `POST /admin/auth/login` |
+| `standardRateLimit` | 60 requests / minute per IP | Public read endpoints (`/search`, `/services`, `/locations/*`) |
+| `strictRateLimit` | 3 requests / hour per IP | `POST /reports` and `POST /admin/auth/login` |
+| `evidenceRateLimit` | 10 requests / hour per IP | `POST /evidence` |
+
+Login shares the strict limiter rather than having its own, so failed sign-in attempts are bounded to the same 3 per hour.
+
+The client IP a limiter keys on is derived according to `TRUSTED_PROXY_HOPS`. When it is `0` (the default) forwarding headers are ignored entirely and only the socket peer counts; behind a proxy or CDN it must be set to the number of hops you control, or clients can forge the value and evade the limits.
 
 Authed admin/moderation endpoints are bounded by their short-lived JWTs (12 h) rather than a documented public rate limit.
 
@@ -42,22 +45,24 @@ A missing/invalid token returns `401 unauthorized`; a valid token with insuffici
 
 | Method | Path | Auth | Rate limit | Request | Response |
 | --- | --- | --- | --- | --- | --- |
-| GET | `/health` | public | — | — | `{ status, database, time }` or `503` |
+| GET | `/health` | public | — | — | `200 { status, database, storage, time }`, or `503` when the database is down |
 | GET | `/search` | public | standard | query: `q`, `department`, `state`, `district`, `page`, `per_page` | `{ total, items }` |
 | GET | `/services` | public | standard | query: `q`, `department`, `state`, `district`, `page`, `per_page` | `{ total, items }` |
-| GET | `/services/:slug` | public | standard | path: `slug` | `{ service, sources, citizen, notice }` |
-| GET | `/states` | public | standard | — | `[{ id, code, name }]` |
-| GET | `/states/:code/districts` | public | standard | path: `code` | `[{ id, code, name }]` |
-| GET | `/districts/:districtId/cities` | public | standard | path: `districtId` | `[{ id, name }]` |
-| GET | `/departments` | public | standard | — | `[{ slug, name, category }]` |
-| POST | `/reports` | public | strict (3/h) | body: report submission | `201 { public_id, status, submission_token }` |
+| GET | `/services/:slug` | public | standard | path: `slug` | `{ id, slug, name, description, department, official, sources, citizen, notice }` |
+| GET | `/locations/states` | public | standard | — | `{ items: [{ id, code, name }] }` |
+| GET | `/locations/states/:code/districts` | public | standard | path: `code` | `{ state, items: [{ id, code, name }] }` |
+| GET | `/locations/districts/:districtId/cities` | public | standard | path: `districtId` | `{ items: [{ id, name }] }` |
+| GET | `/locations/districts/:districtId/offices` | public | standard | path: `districtId`; query: `service` | `{ items }` |
+| GET | `/locations/offices/:id` | public | standard | path: `id` | office detail object |
+| GET | `/locations/departments` | public | standard | — | `{ items: [{ id, slug, name, category }] }` |
+| POST | `/reports` | public | strict (3/h) | body: report submission | `201 { public_id, token, status }` |
 | GET | `/reports/:publicId/status` | public | — | query: `token` | `{ public_id, status, status_changed_at }` or `404` |
 | GET | `/reports/:publicId` | public | — | path: `publicId` | public report view |
-| POST | `/evidence` | public | evidence (10/h) | multipart file (≤ 20 MB) | `201 { id, status, retention_until }` |
+| POST | `/evidence` | public | evidence (10/h) | multipart file (≤ 20 MB) | `201 { id, report_id, mime_type, size_bytes, sha256, status, retention_until }` |
 | GET | `/evidence/:id` | public | — | path: `id` | evidence metadata (no content) |
-| GET | `/datasets` | public | — | — | `{ datasets, generated_at, license, notice }` |
-| GET | `/datasets/reports.csv` | public | — | — | CSV (`text/csv`, no-store) |
-| GET | `/datasets/reports.json` | public | — | — | JSON array (`application/json`, no-store) |
+| GET | `/datasets` | public | — | — | `{ datasets, generated_at, license }` |
+| GET | `/datasets/reports.csv` | public | — | — | CSV (`text/csv`, `Cache-Control: public, max-age=300`) |
+| GET | `/datasets/reports.json` | public | — | — | `{ total, rows }` (`application/json`, `Cache-Control: public, max-age=300`) |
 | GET | `/doc` | public | — | — | JSON index of documentation endpoints |
 | GET | `/doc/openapi.json` | public | — | — | OpenAPI 3.0 specification |
 | POST | `/admin/auth/login` | public | auth | body: `{ email, password }` | `{ token, user }` |
@@ -67,6 +72,9 @@ A missing/invalid token returns `401 unauthorized`; a valid token with insuffici
 | GET | `/admin/stats/overview` | admin | — | — | aggregate counts |
 | GET | `/admin/stats/duplicates` | admin | — | — | duplicate groups |
 | GET | `/admin/stats/clusters` | admin | — | — | coordinated clusters |
+| POST | `/admin/jobs/corroborate` | admin | — | — | promotion summary |
+| POST | `/admin/jobs/recompute-aggregates` | admin | — | — | materialization summary |
+| POST | `/admin/jobs/purge-evidence` | admin | — | — | retention purge summary |
 
 ---
 
@@ -74,15 +82,42 @@ A missing/invalid token returns `401 unauthorized`; a valid token with insuffici
 
 ### `GET /health`
 
-Liveness + database check. Runs `SELECT 1`.
+Liveness + dependency probe. Runs `SELECT 1` against Postgres and performs a cheap check of the configured evidence-storage backend.
 
-Response `200`:
+Response `200` (healthy):
 
 ```json
-{ "status": "ok", "database": "up", "time": "2026-08-20T00:00:00.000Z" }
+{
+  "status": "ok",
+  "database": "up",
+  "storage": { "driver": "local", "status": "up" },
+  "time": "2026-08-20T00:00:00.000Z"
+}
 ```
 
-If the database is unreachable: `503` with `database: "down"` and the standard error envelope.
+**Status-code contract.** The endpoint returns **`200`** with `status: "ok"` when healthy, and **`503`** with `status: "degraded"` when a *hard* dependency is down. Postgres is the only hard dependency: without it the API can serve neither reads, writes, nor the public dataset, so a load balancer or uptime monitor watching the status code must take the instance out of rotation.
+
+Response `503` (database unreachable):
+
+```json
+{
+  "status": "degraded",
+  "database": "down",
+  "storage": { "driver": "local", "status": "up" },
+  "time": "2026-08-20T00:00:00.000Z"
+}
+```
+
+**Fields.**
+
+- `status` — `"ok"` when healthy (HTTP 200); `"degraded"` when a hard dependency is down (HTTP 503).
+- `database` — `"up"` or `"down"` from a `SELECT 1` round-trip. `"down"` is what drives the `503`.
+- `storage` — evidence-storage backend health, `{ "driver": "local" | "supabase", "status": "up" | "down" | "configured" }`:
+  - `local`: `status` reflects whether the configured directory exists and is writable, from a single `fs.access` check — no file is written per poll.
+  - `supabase`: `status` is the static value `"configured"`. The health endpoint deliberately does **not** make a network round-trip to object storage on every poll, since that would make `/health` itself an outage and cost risk.
+- `time` — ISO 8601 timestamp of the probe.
+
+**Storage is advisory.** A storage failure does **not** produce a `503` and does **not** change `status`. The API can still serve every read endpoint and the entire public dataset with a dead storage backend — only evidence *upload* breaks. Storage health is surfaced separately so operators can see it, but only a database failure degrades overall health.
 
 ### `GET /search`
 
@@ -106,11 +141,11 @@ Response `200`:
   "total": 1,
   "items": [
     {
+      "id": "6a1f0c2e-… (service UUID — use as service_id when submitting a report)",
       "slug": "driving-licence",
       "name": "Driving Licence",
       "department": "Transport",
-      "state": "Uttar Pradesh",
-      "district": "Varanasi",
+      "description": "…",
       "report_count": 284
     }
   ]
@@ -121,7 +156,7 @@ Invalid `per_page` (e.g. `1000`) returns `400`.
 
 ### `GET /services`
 
-List services with the same query schema as `/search` (returns `{ total, items }` of `slug`, `name`, `department`, `description`). With no filters it returns all seeded services (12 at launch).
+List services with the same query schema as `/search` (returns `{ total, items }` of `id`, `slug`, `name`, `department`, `description`, `report_count`). The `id` is the service UUID and is what a client passes as `service_id` when submitting a report; `slug` is also accepted (as `service_slug`). With no filters it returns all seeded services (12 at launch).
 
 ### `GET /services/:slug`
 
@@ -129,20 +164,21 @@ Service detail. Returns the official block, its government sources, the citizen-
 
 ```json
 {
-  "service": {
-    "slug": "driving-licence",
-    "name": "Driving Licence",
-    "department": "Transport",
-    "description": "…",
-    "official_fee_inr": "1000.00",
-    "official_timeline_days": 7,
-    "official_visits": 1,
-    "official_documents": [ { "name": "…", "required": true } ],
+  "id": "6a1f0c2e-… (service UUID — pass as service_id when submitting a report)",
+  "slug": "driving-licence",
+  "name": "Driving Licence",
+  "description": "…",
+  "department": { "slug": "transport", "name": "Transport" },
+  "official": {
+    "fee_inr": "1000.00",
+    "timeline_days": 7,
+    "visits": 1,
+    "documents": [ { "name": "…", "required": true } ],
     "process_steps": [ { "order": 1, "title": "…", "description": "…" } ]
   },
   "sources": {
-    "fee": { "url": "…", "title": "…", "last_verified_at": "…" },
-    "timeline": { "url": "…", "title": "…", "last_verified_at": "…" }
+    "fee": { "url": "…", "title": "…", "department": "…", "publication_date": "…", "last_verified_at": "…", "retrieved_at": "…" },
+    "timeline": { "url": "…", "title": "…", "department": "…", "publication_date": "…", "last_verified_at": "…", "retrieved_at": "…" }
   },
   "citizen": {
     "published": true,
@@ -158,48 +194,94 @@ Service detail. Returns the official block, its government sources, the citizen-
 }
 ```
 
+The top-level `id` is the service UUID; `slug` is the human-readable identifier. Either can be used to submit a report (`service_id` / `service_slug`).
+
 The `citizen` block is computed over reports with status `validated | corroborated | evidence_backed | officially_acknowledged` for that service (optionally filtered to a district). It is only `published: true` when the report set has **≥ 3 reports from ≥ 2 distinct IP-hash buckets** for the same (service, district) cell; otherwise all statistics are `null` and `published` is `false`, while `report_count` still shows the actual count. See [`docs/methodology.md`](methodology.md) for the aggregate definitions. Unknown slug returns `404`.
 
-### `GET /states`
+### `GET /locations/states`
+
+All states, alphabetical. Wrapped in an `items` envelope.
 
 ```json
-[ { "id": "…", "code": "UP", "name": "Uttar Pradesh" } ]
+{ "items": [ { "id": "…", "code": "UP", "name": "Uttar Pradesh" } ] }
 ```
 
-### `GET /states/:code/districts`
+### `GET /locations/states/:code/districts`
 
-Districts of the state identified by its ISO 3166-2:IN code (e.g. `UP`). Unknown code returns `404`.
+Districts of the state identified by its ISO 3166-2:IN code (e.g. `UP`, case-insensitive). Returns the resolved `state` alongside its `items`. Unknown code returns `404`.
 
 ```json
-[ { "id": "…", "code": "UP01", "name": "Agra" } ]
+{
+  "state": { "id": "…", "code": "UP", "name": "Uttar Pradesh" },
+  "items": [ { "id": "…", "code": "UP01", "name": "Agra" } ]
+}
 ```
 
-### `GET /districts/:districtId/cities`
+### `GET /locations/districts/:districtId/cities`
 
-Cities of a district by district UUID.
+Cities of a district by district UUID. Wrapped in an `items` envelope.
 
 ```json
-[ { "id": "…", "name": "Agra" } ]
+{ "items": [ { "id": "…", "name": "Agra" } ] }
 ```
 
-### `GET /departments`
+### `GET /locations/districts/:districtId/offices`
+
+Government offices located in a district, identified by district UUID, ordered by name. Optionally narrowed to a single service with `?service=<slug>` (e.g. `?service=driving-licence`).
+
+An **unknown district UUID returns `404`**; a district that exists but has no offices (or no offices for the filtered service) returns `200` with an empty `items` array. `location` is `{ lat, lon }` in WGS 84 (SRID 4326), or `null` when the office has no recorded coordinate.
 
 ```json
-[ { "slug": "rto", "name": "Road Transport Office", "category": "Transport" } ]
+{
+  "items": [
+    {
+      "id": "…",
+      "name": "Regional Transport Office, Varanasi",
+      "address": null,
+      "service": { "slug": "driving-licence", "name": "Driving Licence" },
+      "location": null
+    }
+  ]
+}
+```
+
+### `GET /locations/offices/:id`
+
+A single office by UUID, joined to its service, state and district names. Returns the office object directly (no `items` envelope). Unknown id returns `404`. `district` is `null` for the rare office not tied to a district; `location` is `{ lat, lon }` or `null`.
+
+```json
+{
+  "id": "…",
+  "name": "Regional Passport Office, Mumbai",
+  "address": null,
+  "service": { "slug": "passport", "name": "Passport (Fresh / Reissue)" },
+  "state": { "code": "MH", "name": "Maharashtra" },
+  "district": { "code": "mumbai-city", "name": "Mumbai City" },
+  "location": null
+}
+```
+
+### `GET /locations/departments`
+
+All departments, alphabetical. Wrapped in an `items` envelope.
+
+```json
+{ "items": [ { "id": "…", "slug": "rto", "name": "Road Transport Office", "category": "transport" } ] }
 ```
 
 ### `POST /reports`
 
-Submit an anonymous citizen report. Public, but rate-limited to **3 requests/hour per IP**. On success the response contains a one-time `submission_token` — the reporter must keep it to check status later; only its `sha256` digest is stored.
+Submit an anonymous citizen report. Public, but rate-limited to **3 requests/hour per IP**. On success the response contains a one-time `token` — the reporter must keep it to check status later; only its `sha256` digest is stored (server-side the digest column is `submission_token_hash`).
 
 Request body — validated by `reportSubmissionSchema` (see the machine-readable schema at `data/schemas/report.schema.json` and the column semantics in [`docs/data-dictionary.md`](data-dictionary.md)):
 
 | Field | Type | Required | Constraints |
 | --- | --- | --- | --- |
-| `service_id` | uuid | yes | an existing service |
+| `service_id` | uuid | conditional | an existing service; provide **exactly one** of `service_id` or `service_slug` |
+| `service_slug` | slug | conditional | an existing service slug (as returned by `/services`, `/search`, `/services/:slug`); provide **exactly one** of `service_id` or `service_slug` |
 | `state_id` | uuid | yes | an existing state |
 | `district_id` | uuid | yes | an existing district |
-| `office_id` | uuid | no | nullable; internal reference, never exported |
+| `office_id` | uuid | no | optional; if present must be a valid UUID (an explicit `null` is rejected); internal reference, never exported |
 | `period_start` | string | yes | `YYYY-MM-DD` |
 | `period_end` | string | yes | `YYYY-MM-DD`; ≥ `period_start` |
 | `official_fee_reported_inr` | number | no | 0–10,000,000, multiple of 0.01 |
@@ -215,16 +297,16 @@ At least one experience field must be present (the description and/or one or mor
 Response `201`:
 
 ```json
-{ "public_id": "R-a1b2c3d4", "status": "submitted", "submission_token": "<one-time>" }
+{ "public_id": "R-a1b2c3d4", "token": "<one-time>", "status": "submitted" }
 ```
 
-`public_id` matches `R-[a-z0-9]{8}`. Unknown `service_id`/`state_id`/`district_id` returns `404`; a description shorter than 30 characters, a negative fee, or `period_end < period_start` returns `400`. The report enters status `submitted` and is screened by the anti-abuse system and the moderation queue (see [`docs/moderation.md`](moderation.md)). The API hashes the submitter's IP and any `x-device-fingerprint` header to `sha256` digests — raw identifiers are never stored or returned (see [`docs/privacy.md`](privacy.md)).
+`public_id` matches `R-[a-z0-9]{8}`. An unknown or unresolvable `service_id`/`service_slug`/`state_id`/`district_id` (or a `district_id` that does not belong to `state_id`) returns `400`, as do a description shorter than 30 characters, a negative fee, `period_end < period_start`, or supplying neither or both of `service_id` and `service_slug`. The report enters status `submitted` and is screened by the anti-abuse system and the moderation queue (see [`docs/moderation.md`](moderation.md)). The API hashes the submitter's IP and any `x-device-fingerprint` header to `sha256` digests — raw identifiers are never stored or returned (see [`docs/privacy.md`](privacy.md)).
 
 ### `GET /reports/:publicId/status`
 
 Status lookup for a reporter, authenticated by the one-time token.
 
-Query: `token=<submission_token>`. The server compares the `sha256` of the provided token with the stored digest.
+Query: `token=<token>` (the one-time token returned by `POST /reports`). The server compares the `sha256` of the provided token with the stored digest.
 
 ```json
 { "public_id": "R-a1b2c3d4", "status": "validated", "status_changed_at": "2026-08-20T00:00:00.000Z" }
@@ -238,17 +320,35 @@ Public report view: service/state/district names, dates, amounts, `visits`, `del
 
 ### `POST /evidence`
 
-Upload a supporting file for a report. Public, rate-limited to **10 requests/hour per IP**. Body is `multipart/form-data`; the file part must be a `File` ≤ 20 MB. The file is stored through the configured storage adapter (`local` or `supabase`) under a private key, its `sha256` is computed and recorded, and the evidence row is created in status `pending_review` with:
+Upload a supporting file for a report. Rate-limited to **10 requests/hour per IP**. Body is `multipart/form-data`; the file part must be a `File` ≤ 20 MB.
+
+Only the submitter may attach evidence, because accepted evidence promotes its report to `evidence_backed`. Identify the report with either `public_id` (`R-xxxxxxxx`, what the reporter is given) or `report_id` (the internal uuid, for server-side callers), and include the one-time `token` from `POST /reports` in the same form. A wrong token and an unknown report both return `404` so the endpoint cannot be used to probe whether a report exists.
+
+| Field | Required | Notes |
+| --- | --- | --- |
+| `file` | yes | `image/jpeg`, `image/png`, `image/webp`, `image/heic` or `application/pdf`, ≤ 20 MB |
+| `token` | yes | The one-time token from `POST /reports` |
+| `public_id` | one of | The reporter-facing id, `R-xxxxxxxx` |
+| `report_id` | one of | The internal report uuid |
+ The file is stored through the configured storage adapter (`local` or `supabase`) under a private key, its `sha256` is computed and recorded, and the evidence row is created in status `pending_review` with:
 
 > `retention_until = now + 90 days`
 
 Response `201`:
 
 ```json
-{ "id": "<uuid>", "status": "pending_review", "retention_until": "2026-11-18T00:00:00.000Z" }
+{
+  "id": "<uuid>",
+  "report_id": "<uuid>",
+  "mime_type": "image/png",
+  "size_bytes": 20480,
+  "sha256": "<hex>",
+  "status": "pending_review",
+  "retention_until": "2026-11-18T00:00:00.000Z"
+}
 ```
 
-Oversized files (> 20 MB), missing file parts, or evidence for an unknown report return `400`/`404`. Evidence is reviewed by moderators (`POST /admin/evidence/review`) and auto-deleted after retention expires.
+`retention_until` is `now + 90 days` and is what the retention purge acts on. Oversized files (> 20 MB), missing file parts, or evidence for an unknown report return `400`/`404`. Evidence is reviewed by moderators (`POST /admin/evidence/review`) and permanently deleted once `retention_until` passes by the retention purge (`POST /admin/jobs/purge-evidence` / `npm run purge-evidence`; see [`docs/privacy.md`](privacy.md)).
 
 ### `GET /evidence/:id`
 
@@ -261,22 +361,29 @@ Dataset index.
 ```json
 {
   "datasets": [
-    { "name": "reports", "format": "csv", "url": "/datasets/reports.csv" },
-    { "name": "reports", "format": "json", "url": "/datasets/reports.json" }
+    {
+      "name": "reports",
+      "description": "Publishable citizen reports, PII-redacted.",
+      "formats": {
+        "csv": "http://localhost:8787/datasets/reports.csv",
+        "json": "http://localhost:8787/datasets/reports.json"
+      }
+    }
   ],
-  "generated_at": "2026-08-20T00:00:00.000Z",
-  "license": "CC BY 4.0 (data) / MIT (code) — see docs/methodology.md",
-  "notice": "Citizen reports represent reported experiences and are not automatically verified findings of wrongdoing."
+  "license": "Data: CC BY 4.0 (see LICENSE-DATA). Code: MIT (see LICENSE).",
+  "generated_at": "2026-08-20T00:00:00.000Z"
 }
 ```
 
+Served with `Cache-Control: public, max-age=300`.
+
 ### `GET /datasets/reports.csv`
 
-The full public dataset as RFC 4180 CSV. Content type `text/csv`, served with `Cache-Control: no-store`. Column order and semantics match the data dictionary exactly.
+The full public dataset as RFC 4180 CSV (fields containing a comma, quote, CR or LF are wrapped in double quotes with embedded quotes doubled; records are separated by CRLF and the body ends with a trailing CRLF). Content type `text/csv; charset=utf-8`, served with `Cache-Control: public, max-age=300` and a `Content-Disposition` attachment filename. Column order and semantics match the data dictionary exactly.
 
 ### `GET /datasets/reports.json`
 
-The same dataset as a JSON array of objects. Money values are decimal strings. Content type `application/json`, `Cache-Control: no-store`.
+The same dataset as `{ "total": <n>, "rows": [ … ] }`, where `rows` is an array of objects (one per report) and `total` is `rows.length`. Object keys are the snake_case column names in the data dictionary; money values are decimal strings. Content type `application/json`, `Cache-Control: public, max-age=300`.
 
 Both exports contain **only published reports** (statuses `validated`, `corroborated`, `evidence_backed`, `officially_acknowledged`) and **never** `ip_hash`, device hashes, token hashes, or office identifiers. See [`docs/data-dictionary.md`](data-dictionary.md) and [`docs/mirroring.md`](mirroring.md).
 
@@ -361,6 +468,36 @@ Duplicate groups (`duplicate_group_id` with count ≥ 2): `group_id`, `report_co
 ### `GET /admin/stats/clusters` *(admin only)*
 
 Coordinated-submission clusters detected by the anti-abuse system: `{ ip_hash_prefix, service_slug, report_count, time_range }` for IP-hash + service groups with count ≥ 5 in the detection window. See [`docs/methodology.md`](methodology.md) for the anti-abuse signals.
+
+### Maintenance jobs *(admin only)*
+
+Operational jobs under `/admin/jobs/*` are admin-only and each has a matching CLI script (in `apps/api/src/scripts/`) that a production cron invokes on a schedule. Each returns a small JSON summary with the job name and a `ran_at` ISO timestamp.
+
+#### `POST /admin/jobs/corroborate`
+
+Runs the auto-corroboration pass: any `(service, district)` cell with ≥ 3 live reports from ≥ 2 distinct IP buckets promotes its pending (`submitted`/`validated`) reports to `corroborated`.
+
+```json
+{ "job": "corroborate", "promoted_count": 2, "promoted": [ { "public_id": "R-…", "from_status": "submitted", "to_status": "corroborated" } ], "ran_at": "2026-08-20T00:00:00.000Z" }
+```
+
+#### `POST /admin/jobs/recompute-aggregates`
+
+Materializes the public statistics into `aggregate_metrics` (one row per `service`/`district`/`metric_type` cell), using the same computations and publishing threshold as the live service aggregates. CLI: `npm run recompute`.
+
+```json
+{ "job": "recompute-aggregates", "cells": 12, "rows": 48, "ran_at": "2026-08-20T00:00:00.000Z" }
+```
+
+#### `POST /admin/jobs/purge-evidence`
+
+Enforces the evidence retention policy (see [`docs/privacy.md`](privacy.md)): permanently deletes every evidence file whose `retention_until` has passed, from **both** the storage backend and the metadata table. The storage object is removed first and the metadata row only once that succeeds, so a file is never orphaned. Resilient — one object that fails to delete does not abort the run. CLI: `npm run purge-evidence` (what a production cron runs, e.g. daily).
+
+```json
+{ "job": "purge-evidence", "examined": 7, "deleted": 6, "failed": 1, "failed_keys": ["<report-uuid>/<sha256>"], "ran_at": "2026-08-20T00:00:00.000Z" }
+```
+
+`failed_keys` lists storage keys that could not be removed (internal ids, admin-only) so an operator can investigate; those rows are retained and retried on the next run.
 
 ---
 

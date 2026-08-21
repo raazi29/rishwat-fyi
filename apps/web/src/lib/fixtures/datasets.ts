@@ -15,6 +15,6 @@ export const sampleDatasetIndex: DatasetIndex = {
     { name: "reports", format: "json", url: "/datasets/reports.json" },
   ],
   generated_at: "2026-08-20T00:00:00.000Z",
-  license: "CC BY 4.0 (data) / MIT (code) — see docs/methodology.md",
+  license: "Data: CC BY 4.0 (see LICENSE-DATA). Code: MIT (see LICENSE).",
   notice: CITIZEN_REPORT_NOTICE,
 };

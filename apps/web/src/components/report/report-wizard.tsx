@@ -96,18 +96,27 @@ export function ReportWizard({ geo }: { geo: WizardGeo }) {
     if (res.ok) {
       const sel = resolveSelections(state.data, geo);
       const location = [sel.cityName, sel.stateName].filter(Boolean).join(", ") || null;
+      // The upload is awaited rather than fired and forgotten: the navigation
+      // below would otherwise be free to abort the in-flight server action. The
+      // report itself is already saved, so a failure here is reported on the
+      // confirmation screen instead of discarding the submission.
+      let evidenceAttached: boolean | undefined;
       if (evidenceFile) {
         const form = new FormData();
         form.append("file", evidenceFile);
+        // public_id + the one-time token is what POST /evidence authorizes on;
+        // the internal report uuid is deliberately never exposed publicly.
         form.append("public_id", res.publicId);
+        form.append("token", res.token);
         form.append("mime_type", evidenceFile.type);
         form.append("size_bytes", String(evidenceFile.size));
-        // Best-effort and non-blocking; evidence can always be added later.
-        void uploadEvidenceAction(form).catch(() => undefined);
+        const upload = await uploadEvidenceAction(form).catch(() => null);
+        evidenceAttached = upload?.ok === true;
       }
       const receipt: ReportReceipt = {
         publicId: res.publicId,
         token: res.token,
+        evidenceAttached,
         status: res.status,
         submittedAt: new Date().toISOString(),
         serviceName: sel.serviceName,

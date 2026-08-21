@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import type { AppEnv } from "../../env.js";
 import { requireAuth, requireRole } from "../../middleware/auth.js";
 import { recomputeAggregates } from "../../services/metrics.service.js";
+import { purgeExpiredEvidence } from "../../services/retention.service.js";
 import { corroborateEligible } from "../../services/verification.service.js";
 
 export const adminJobs = new Hono<AppEnv>();
@@ -38,6 +39,24 @@ adminJobs.post("/recompute-aggregates", async (c) => {
     job: "recompute-aggregates",
     cells: summary.cells,
     rows: summary.rows,
+    ran_at: new Date().toISOString(),
+  });
+});
+
+// POST /purge-evidence — enforce the evidence retention policy (privacy.md):
+// delete every evidence object whose retention_until has passed from BOTH the
+// storage backend and the metadata table. Storage is removed first so a failure
+// never orphans a file. `failed_keys` are internal ids, exposed only here on the
+// admin-only surface. A production cron runs the same work via `npm run
+// purge-evidence`.
+adminJobs.post("/purge-evidence", async (c) => {
+  const summary = await purgeExpiredEvidence(c.get("db"), c.get("storage"));
+  return c.json({
+    job: "purge-evidence",
+    examined: summary.examined,
+    deleted: summary.deleted,
+    failed: summary.failed,
+    failed_keys: summary.failedKeys,
     ran_at: new Date().toISOString(),
   });
 });

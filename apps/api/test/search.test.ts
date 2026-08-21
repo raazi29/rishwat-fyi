@@ -16,10 +16,16 @@ describe("GET /search", () => {
   it("returns matching services for q=licence (seeded data)", async () => {
     const res = await app.request("/search?q=licence");
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { total: number; items: { slug: string }[] };
+    const body = (await res.json()) as { total: number; items: { id: string; slug: string }[] };
     expect(Array.isArray(body.items)).toBe(true);
     expect(body.total).toBeGreaterThan(0);
     expect(body.items.length).toBeGreaterThan(0);
+    // Search items must expose the service UUID (usable as report service_id).
+    const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    for (const item of body.items) {
+      expect(item.id).toMatch(uuidRe);
+      expect(typeof item.slug).toBe("string");
+    }
   });
 
   it("returns paginated results for an empty query", async () => {

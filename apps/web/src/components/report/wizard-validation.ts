@@ -100,6 +100,7 @@ function validatePayments(data: WizardData): FieldErrors {
 export function fieldForSchemaPath(path: string): keyof WizardData | null {
   switch (path) {
     case "service_id":
+    case "service_slug":
       return "serviceSlug";
     case "state_id":
       return "stateCode";

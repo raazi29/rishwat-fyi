@@ -135,5 +135,5 @@ export function getSampleReportStatus(publicId: string, token: string): ReportSt
 export const sampleSubmissionResponse: ReportSubmissionResponse = {
   public_id: "R-7h3k9m2p",
   status: "submitted",
-  submission_token: "smpl-tok-7h3k9m2p0q1r",
+  token: "smpl-tok-7h3k9m2p0q1r",
 };

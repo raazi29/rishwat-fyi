@@ -1,0 +1,24 @@
+# NOTE FOR MAINTAINERS: replace ORG/REPO below with the real GitHub org and
+# repository once the remote exists, and confirm the public site URL.
+blank_issues_enabled: false
+contact_links:
+  - name: Report your experience of a government service
+    url: https://rishwat.fyi/report
+    about: >-
+      If a government office asked you for an extra payment, delayed your work, or
+      made you visit repeatedly, do NOT open a GitHub issue. GitHub issues are public
+      and permanent. Use the site's reporting flow, which collects no name, phone,
+      Aadhaar or address, stores only hashed identifiers, and redacts personal
+      details before anything is published.
+  - name: Security or privacy vulnerability
+    url: https://github.com/ORG/REPO/blob/main/SECURITY.md
+    about: >-
+      Do not file security issues publicly. Reporter deanonymization, PII leaks,
+      aggregate manipulation and admin/moderation exposure go through private
+      disclosure — see SECURITY.md for the process and the safe-harbour terms.
+  - name: Methodology, thresholds and data limitations
+    url: https://github.com/ORG/REPO/blob/main/docs/methodology.md
+    about: >-
+      Before opening an issue about how a statistic was computed, or why a figure is
+      missing, read how reports become statistics and what the publishing threshold
+      suppresses.

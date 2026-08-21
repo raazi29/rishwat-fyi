@@ -33,7 +33,14 @@ Evidence files (supporting documents) are retained for a fixed, short window:
 
 > `retention_until = now + 90 days`
 
-Every evidence row carries a `retention_until` timestamp; files are deleted automatically after it expires, from both the storage backend and the metadata table. There is no indefinite evidence hoarding. Objects are stored in a private storage bucket (see [Supabase Deployment](supabase-deployment.md) for the production configuration) and never exposed through public endpoints.
+Every evidence row is stamped with a `retention_until` timestamp **at upload time** (`retention_until = now + 90 days`, set by `POST /evidence`). A scheduled purge then deletes every file whose window has passed **from both the storage backend and the metadata table** — the storage object first, and the database row only once that succeeds, so a file is never left behind without a record of it. There is no indefinite evidence hoarding.
+
+The purge is a single operation exposed two ways:
+
+- **`POST /admin/jobs/purge-evidence`** — admin-only endpoint, for on-demand runs and monitoring.
+- **`npm run purge-evidence`** (`apps/api/src/scripts/purge-evidence.ts`) — the CLI a production cron invokes on a schedule (e.g. daily); it uses the same configuration and storage driver as the API.
+
+Both run the shared `purgeExpiredEvidence` routine in `apps/api/src/services/retention.service.ts`, which also defines the 90-day window as a single named constant. Objects are stored in a private storage bucket (see [Supabase Deployment](supabase-deployment.md) for the production configuration) and never exposed through public endpoints.
 
 ## The redaction pipeline
 

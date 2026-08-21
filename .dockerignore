@@ -1,0 +1,51 @@
+# Build context is the repository root (see apps/api/Dockerfile). Keep it small
+# and never ship secrets or host-built artifacts into the image.
+
+# Dependencies are installed inside the image from package-lock.json; host
+# node_modules would be the wrong platform and would shadow the install.
+node_modules
+**/node_modules
+
+# Version control / CI / editor metadata
+.git
+.gitignore
+.github
+.claude
+.vscode
+.idea
+
+# Environment files (the *.env.example templates are intentionally excluded too —
+# nothing in the image should read them).
+.env
+.env.*
+**/.env
+**/.env.*
+
+# Build output and caches
+apps/web/.next
+apps/web/out
+**/dist
+**/*.tsbuildinfo
+coverage
+.vercel
+
+# Runtime data, logs and local scratch
+data/evidence
+data/exports
+*.log
+.tmp
+.playwright-mcp
+test-results
+playwright-report
+
+# Not needed by the API image
+apps/web/src
+apps/web/public
+apps/web/scripts
+design_uiux
+plan
+docs
+*.md
+Dockerfile*
+docker-compose.yml
+vercel.json

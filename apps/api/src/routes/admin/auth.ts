@@ -4,13 +4,14 @@ import { eq, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import type { AppEnv } from "../../env.js";
 import { badRequest, unauthorized } from "../../errors.js";
-import { strictRateLimit } from "../../middleware/rate-limit.js";
+import { authRateLimit } from "../../middleware/rate-limit.js";
 import { issueToken, verifyPassword } from "../../services/auth.service.js";
 
 export const adminAuth = new Hono<AppEnv>();
 
-// Brute-force protection on login (no-op under tests).
-adminAuth.use("*", strictRateLimit);
+// Brute-force protection on login (no-op under tests). Uses the dedicated auth
+// limiter rather than the strict submission limiter — see rate-limit.ts for why.
+adminAuth.use("*", authRateLimit);
 
 // POST /login — exchange email + password for a 12h Bearer JWT. Unknown email
 // and wrong password return the same generic 401 so account existence is not

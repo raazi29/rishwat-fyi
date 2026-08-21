@@ -46,3 +46,20 @@ export interface ServiceSeed {
   feeSourceUrl: string;
   timelineSourceUrl: string;
 }
+
+export interface OfficeSeed {
+  /** Slug of the service this office delivers (resolved to service_id). */
+  serviceSlug: string;
+  /** ISO 3166-2:IN state suffix, e.g. "UP" (resolved to state_id). */
+  stateCode: string;
+  /** District name exactly as seeded; resolved to district_id via
+   *  (state_id, slugify(districtName)). Must match a seeded district. */
+  districtName: string;
+  /** Real, publicly verifiable office name — never invented. */
+  name: string;
+  /** Street/area address when confidently known, otherwise null. */
+  address?: string | null;
+  /** Point coordinate as { lat, lon }, or null when the exact location is not
+   *  confidently known. Public honesty rule: prefer null over a guessed point. */
+  location?: { lat: number; lon: number } | null;
+}

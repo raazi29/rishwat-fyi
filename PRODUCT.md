@@ -46,7 +46,7 @@ The mechanism a neighbouring product cannot truthfully copy: every published num
 - Authenticated surface: moderator queue, report decisions, evidence review, admin statistics. JWT, 12-hour expiry, roles `moderator` and `admin`.
 - Launch catalogue is real and already seeded: 8 departments and 12 high-friction services with official fees, timelines, document lists, process steps, and cited government source URLs (`packages/database/src/seed/services/**`), plus real Indian states, districts and cities (`packages/database/src/seed/locations/**`).
 - Terminology that is fixed: *official* vs *citizen-reported* (never "real" vs "claimed"); *report* (never "complaint"); *additional amount reported* (never "bribe" as a data label); *friction*; *corroborated*.
-- **[open]** Licence for code vs data is not finally selected (`plan` §12); the API currently advertises `CC BY 4.0 (data) / MIT (code)`. Treat as provisional and do not present as settled.
+- **Licence (`plan` §12) — decided:** code is **MIT** (see [`LICENSE`](LICENSE)); published datasets are **CC BY 4.0** (see [`LICENSE-DATA`](LICENSE-DATA)). Code and citizen-submitted data rights are licensed separately, and the API advertises this in the `GET /datasets` `license` field.
 - **[open]** Legal/privacy review before public launch has not happened (`plan` §20).
 - **[open]** Hindi and other Indian-language localisation is intended but not specified; do not ship copy that cannot be translated.
 

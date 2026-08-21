@@ -29,7 +29,9 @@ services:
     environment:
       DATABASE_URL: postgres://rishwat:rishwat_dev@db:5432/rishwat
       TEST_DATABASE_URL: postgres://rishwat:rishwat_dev@db:5432/rishwat_test
-      JWT_SECRET: test-secret-for-dev
+      # Local dev only. Must be >= 32 chars: config.ts rejects short or
+      # placeholder secrets at boot outside tests. Never reuse this anywhere real.
+      JWT_SECRET: local-dev-only-secret-not-for-production-use
       EVIDENCE_STORAGE_DRIVER: local
       EVIDENCE_STORAGE_DIR: ./data/evidence
       PUBLIC_BASE_URL: http://localhost:8787

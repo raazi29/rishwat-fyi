@@ -5,7 +5,10 @@
  *
  * 1. No route ever throws because the API is down. Every call returns a
  *    discriminated result, and resource modules decide whether to fall back to
- *    the bundled sample dataset.
+ *    the bundled sample dataset. The single, deliberate exception is the
+ *    sample-fallback kill switch below: an operator who sets
+ *    `NEXT_PUBLIC_ALLOW_SAMPLE_FALLBACK=false` has asked for outages to look
+ *    like outages, so an unreachable API throws instead of inventing figures.
  * 2. Fallback data is always tagged `source: "sample"` so the UI can say so.
  *    Sample figures are never presented as live data — see PRODUCT.md.
  */
@@ -39,8 +42,40 @@ export function apiBaseUrl(): string {
   ).replace(/\/+$/, "");
 }
 
+/**
+ * The sample-data kill switch. Unset (the local-development default) means the
+ * bundled fixtures may stand in for an unreachable API; `"false"` means they
+ * may not. Read at call time rather than module load so a value injected after
+ * the bundle is evaluated still takes effect.
+ */
 export function sampleFallbackAllowed(): boolean {
   return process.env.NEXT_PUBLIC_ALLOW_SAMPLE_FALLBACK !== "false";
+}
+
+/**
+ * Thrown when the API is unavailable and `NEXT_PUBLIC_ALLOW_SAMPLE_FALLBACK`
+ * forbids substituting the bundled sample dataset.
+ *
+ * This is what makes the kill switch real: rather than serving invented fees
+ * and delays under a disclosure banner, the request fails and the route's
+ * error boundary (`app/error.tsx`, or `app/global-error.tsx`) renders. Server
+ * components therefore keep their guarantee that `Sourced.data` is present —
+ * they either get data or never render at all.
+ *
+ * Callers that must not surface a raw failure (a server action answering a
+ * form, say) should catch this and map it to their own error state.
+ */
+export class SampleFallbackDisabledError extends Error {
+  /** The underlying API failure, for logging and for operator-facing detail. */
+  readonly failure: ApiFailure;
+
+  constructor(failure: ApiFailure) {
+    super(
+      `The API is unavailable (${failure.code}: ${failure.message}) and sample-data fallback is disabled by NEXT_PUBLIC_ALLOW_SAMPLE_FALLBACK=false.`,
+    );
+    this.name = "SampleFallbackDisabledError";
+    this.failure = failure;
+  }
 }
 
 export interface ApiRequestOptions {
@@ -169,7 +204,13 @@ function safeJsonParse(text: string): unknown {
 
 /**
  * Resolve a call, substituting sample data when the API is unavailable.
- * `notFound` failures are *not* substituted: a 404 from a live API is real.
+ *
+ * A `not_found` is not an outage — a live API answered, it simply does not
+ * carry the row this deployment's catalogue describes — so the bundled sample
+ * still stands in for it, exactly as before, regardless of the kill switch.
+ * Every other failure means the API could not answer, and is gated by
+ * `sampleFallbackAllowed()`: with the switch off, `SampleFallbackDisabledError`
+ * is thrown so the outage reaches the error boundary instead of the reader.
  */
 export async function withSample<T>(
   call: () => Promise<ApiResult<T>>,
@@ -177,13 +218,19 @@ export async function withSample<T>(
 ): Promise<Sourced<T>> {
   const result = await call();
   if (result.ok) return { data: result.data, source: "api" };
-  if (result.error.code === "not_found" || !sampleFallbackAllowed()) {
-    return { data: sample(), source: "sample", reason: result.error };
+  if (result.error.code !== "not_found" && !sampleFallbackAllowed()) {
+    throw new SampleFallbackDisabledError(result.error);
   }
   return { data: sample(), source: "sample", reason: result.error };
 }
 
-/** Same as `withSample`, but a real 404 stays a 404. */
+/**
+ * Same as `withSample`, but a real 404 stays a 404 (`null`) instead of being
+ * papered over with a fixture. The kill switch applies identically: an outage
+ * throws rather than returning an invented record, because `null` here would
+ * tell the reader the record does not exist, which is a different — and false
+ * — statement.
+ */
 export async function withSampleUnlessMissing<T>(
   call: () => Promise<ApiResult<T>>,
   sample: () => T | null,
@@ -191,6 +238,7 @@ export async function withSampleUnlessMissing<T>(
   const result = await call();
   if (result.ok) return { data: result.data, source: "api" };
   if (result.error.code === "not_found") return null;
+  if (!sampleFallbackAllowed()) throw new SampleFallbackDisabledError(result.error);
   const fallback = sample();
   if (fallback === null) return null;
   return { data: fallback, source: "sample", reason: result.error };

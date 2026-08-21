@@ -23,6 +23,29 @@ import { services } from "./routes/services.js";
 import type { EvidenceStorage } from "./storage/index.js";
 
 /**
+ * Route prefixes that form the open, publicly consumable API. These — and only
+ * these — get wildcard CORS. Keep in sync with the `app.route` calls below.
+ */
+const PUBLIC_CORS_PATHS = [
+  "/health",
+  "/health/*",
+  "/search",
+  "/search/*",
+  "/services",
+  "/services/*",
+  "/locations",
+  "/locations/*",
+  "/reports",
+  "/reports/*",
+  "/evidence",
+  "/evidence/*",
+  "/datasets",
+  "/datasets/*",
+  "/doc",
+  "/doc/*",
+] as const;
+
+/**
  * Build the Hono application. `db`, `storage` and `config` are injected onto the
  * request context so routes and middleware can read them without module-level
  * globals — this also makes the app trivial to boot in tests.
@@ -31,13 +54,26 @@ export function createApp(db: Db, storage: EvidenceStorage, config: AppConfig) {
   const app = new Hono<AppEnv>();
 
   app.use("*", logger());
-  app.use("*", cors());
   app.use("*", async (c, next) => {
     c.set("db", db);
     c.set("storage", storage);
     c.set("config", config);
     await next();
   });
+
+  // CORS is scoped, not global. The public API is meant to be openly consumable
+  // from anywhere, so it keeps `Access-Control-Allow-Origin: *`. /admin/* must
+  // NOT — responses there include IP-hash prefixes (/admin/stats/clusters) and
+  // moderation data, and a wildcard would let any page a logged-in moderator
+  // visits read them. Admin gets an explicit ADMIN_CORS_ORIGINS allowlist, or no
+  // CORS headers at all when that env var is unset (the default).
+  for (const path of PUBLIC_CORS_PATHS) {
+    app.use(path, cors());
+  }
+  const adminOrigins = config.adminCorsOrigins ?? [];
+  if (adminOrigins.length > 0) {
+    app.use("/admin/*", cors({ origin: adminOrigins, credentials: true }));
+  }
 
   // Public API surface.
   app.route("/health", health);

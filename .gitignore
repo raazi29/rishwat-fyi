@@ -1,7 +1,11 @@
 node_modules/
 dist/
+# Real environment files, never the committed *.env.example templates.
+# Next.js loads .env.local, .env.development.local and .env.production.local in
+# addition to .env / .env.production — all of them can hold real secrets.
 .env
-.env.local
+.env.production
+.env*.local
 *.log
 data/evidence/
 data/exports/
@@ -19,3 +23,8 @@ next-env.d.ts
 .playwright-mcp/
 test-results/
 playwright-report/
+
+
+# Internal planning (not for public repo)
+docs/superpowers/
+plan/

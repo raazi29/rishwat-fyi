@@ -1,0 +1,129 @@
+name: New service or data coverage request
+description: Ask for a government service, state or district to be added to the catalogue.
+title: "[coverage] "
+labels: ["coverage", "data"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Coverage grows through contributions: more services and locations mean better data. A service can only be seeded with **real** official figures and **real** government source URLs — never invented ones — so this form asks for the same fields a service record needs (see `packages/database/src/seed/services/` and the "Adding a new service" section of `docs/contributing.md`).
+
+        Fill in what you know. A request with a government source URL and the official fee can usually be seeded straight away; one without them needs research first.
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What should be added
+      options:
+        - A government service
+        - A state or district (location coverage)
+        - An office / facility
+    validations:
+      required: true
+  - type: input
+    id: service-name
+    attributes:
+      label: Service name
+      description: The official name of the service, as the department calls it.
+      placeholder: e.g. Police Clearance Certificate
+    validations:
+      required: false
+  - type: input
+    id: slug
+    attributes:
+      label: Proposed slug
+      description: Kebab-case and unique, matching the existing catalogue style.
+      placeholder: e.g. police-clearance-certificate
+    validations:
+      required: false
+  - type: input
+    id: department
+    attributes:
+      label: Department or authority
+      description: Which department delivers it. Say if this is a new department for the catalogue.
+      placeholder: e.g. Police Department
+    validations:
+      required: false
+  - type: input
+    id: state
+    attributes:
+      label: State / district
+      description: Which state or district this applies to. Fees are often state-specific — say which state your figures come from.
+    validations:
+      required: true
+  - type: input
+    id: official-fee
+    attributes:
+      label: Official fee (INR)
+      description: The official amount. Write "variable" if it is percentage- or slab-based, and explain in the notes.
+      placeholder: e.g. 300.00
+    validations:
+      required: false
+  - type: input
+    id: official-timeline
+    attributes:
+      label: Official timeline (days)
+      description: The service standard or citizen-charter timeline, in days.
+    validations:
+      required: false
+  - type: input
+    id: official-visits
+    attributes:
+      label: Official number of office visits
+      description: How many in-person visits the official process expects.
+    validations:
+      required: false
+  - type: textarea
+    id: documents
+    attributes:
+      label: Required documents
+      description: One per line. Mark each as required or optional.
+      value: |
+        - Proof of identity (required)
+        - Proof of address (required)
+    validations:
+      required: false
+  - type: textarea
+    id: process-steps
+    attributes:
+      label: Official process steps
+      description: The steps as the department describes them, in order.
+      value: |
+        1. Apply —
+        2. Verification —
+        3. Issue —
+    validations:
+      required: false
+  - type: input
+    id: source-url
+    attributes:
+      label: Government source URL
+      description: >-
+        Required. The official government page for this service — the portal, citizen charter, fee schedule or
+        notification that the figures above come from. If you do not have one, say so in the notes and leave this as
+        "unknown"; the request will need research before it can be seeded.
+      placeholder: https://
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why this service or location matters
+      description: For example, that it is high-friction, high-volume, or that people frequently ask for it.
+    validations:
+      required: false
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes and caveats
+      description: Anything that complicates the figures — state variation, slab-based fees, recent changes, multiple authorities.
+    validations:
+      required: false
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: Before submitting
+      options:
+        - label: Any figures above come from a government source, not from memory, hearsay or an estimate.
+          required: true
+        - label: This request names no individual government employee.
+          required: true

@@ -10,7 +10,8 @@
     "test": "vitest run",
     "create-admin": "tsx src/scripts/create-admin.ts",
     "export": "tsx src/scripts/export-dataset.ts",
-    "recompute": "tsx src/scripts/recompute-aggregates.ts"
+    "recompute": "tsx src/scripts/recompute-aggregates.ts",
+    "purge-evidence": "tsx src/scripts/purge-evidence.ts"
   },
   "dependencies": {
     "@hono/node-server": "^1.13.0",

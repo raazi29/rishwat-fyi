@@ -11,6 +11,7 @@ export interface SearchFilters {
 }
 
 export interface SearchItem {
+  id: string;
   slug: string;
   name: string;
   department: string;
@@ -83,7 +84,7 @@ export async function searchServices(
   const rows = await execRows<Row>(
     db,
     sql`
-      select s.slug, s.name, d.name as department, s.description,
+      select s.id::text as id, s.slug, s.name, d.name as department, s.description,
         ${reportCount} as report_count,
         (count(*) over())::int as total_count
       from services s
@@ -96,6 +97,7 @@ export async function searchServices(
 
   const total = rows.length > 0 ? (rows[0] as Row).total_count : 0;
   const items = rows.map((r) => ({
+    id: r.id,
     slug: r.slug,
     name: r.name,
     department: r.department,

@@ -26,6 +26,36 @@ describe("reportSubmissionSchema", () => {
     expect(res.success).toBe(true);
   });
 
+  // The service may be identified by service_id OR service_slug, exactly one.
+  const baseNoService = {
+    state_id: baseReport.state_id,
+    district_id: baseReport.district_id,
+    period_start: baseReport.period_start,
+    period_end: baseReport.period_end,
+    description: baseReport.description,
+  };
+
+  it("accepts a report identified by service_slug instead of service_id", () => {
+    const res = reportSubmissionSchema.safeParse({
+      ...baseNoService,
+      service_slug: "driving-licence",
+    });
+    expect(res.success).toBe(true);
+  });
+
+  it("rejects a report that provides neither service_id nor service_slug", () => {
+    const res = reportSubmissionSchema.safeParse(baseNoService);
+    expect(res.success).toBe(false);
+  });
+
+  it("rejects a report that provides both service_id and service_slug", () => {
+    const res = reportSubmissionSchema.safeParse({
+      ...baseReport,
+      service_slug: "driving-licence",
+    });
+    expect(res.success).toBe(false);
+  });
+
   it("accepts a complete valid report", () => {
     const res = reportSubmissionSchema.safeParse({
       ...baseReport,

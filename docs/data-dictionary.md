@@ -33,15 +33,15 @@ publishing-threshold rules for aggregates.
 
 ## 2. License
 
-- **Data (the exported rows):** [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) — attribution required.
-- **Code (schemas, exports, and everything in this repository):** MIT.
+- **Data (the exported rows):** [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) — attribution required. See [`LICENSE-DATA`](../LICENSE-DATA).
+- **Code (schemas, exports, and everything in this repository):** MIT. See [`LICENSE`](../LICENSE).
 
-See [`methodology.md`](methodology.md) for the full terms, and the `license` field of
+See [`LICENSE`](../LICENSE) and [`LICENSE-DATA`](../LICENSE-DATA) for the full terms, and the `license` field of
 [`GET /datasets`](api.md#get-datasets) in the API response.
 
 ## 3. Redaction policy
 
-The `redacted_description` column is the raw report description passed through
+The `description` column is the raw report description passed through
 `apps/api/src/utils/redaction.ts` **before** export. The redactor deterministically replaces:
 
 - Aadhaar numbers (12 digits)
@@ -55,7 +55,7 @@ exported. See [`privacy.md`](privacy.md) for the full do-not-publish list.
 
 ## 4. Fields that are NEVER exported
 
-The export is deliberately scoped to the 18 columns below. The following database columns
+The export is deliberately scoped to the 17 columns below. The following database columns
 exist for abuse detection and tracking but are **never** present in any export, CSV, or JSON
 response:
 
@@ -71,47 +71,53 @@ device fingerprint / submission token — store SHA-256 hex digests only; never 
 
 ### JSON (`reports.json`)
 
-A JSON **array of objects**, one per report. Keys are camelCase and match the column names
-in this document exactly. Money values are exported as **decimal strings** (e.g. `"1500.00"`),
-never as floats, to preserve the exact `numeric(12,2)` precision.
+An **object** of the shape `{ "total": <n>, "rows": [ … ] }`, where `rows` is an array of
+objects (one per report) and `total` equals `rows.length`. Keys are **snake_case** and match
+the column names in this document exactly. Money values are exported as **decimal strings**
+(e.g. `"1500.00"`), never as floats, to preserve the exact `numeric(12,2)` precision.
 
 ```json
-[
-  {
-    "public_id": "R-a1b2c3d4",
-    "service_slug": "driving-licence",
-    "service_name": "Driving Licence",
-    "department": "Transport",
-    "state_code": "UP",
-    "state_name": "Uttar Pradesh",
-    "district_name": "Agra",
-    "period_start": "2026-05-01",
-    "period_end": "2026-05-31",
-    "official_fee_reported_inr": "600.00",
-    "additional_amount_reported_inr": "1500.00",
-    "amount_paid_inr": "2100.00",
-    "paid": true,
-    "delay_days": 45,
-    "visits": 3,
-    "redacted_description": "Had to pay extra to the agent. Contact [REDACTED] for details.",
-    "status": "validated",
-    "created_at": "2026-06-02T10:15:00.000Z"
-  }
-]
+{
+  "total": 1,
+  "rows": [
+    {
+      "public_id": "R-a1b2c3d4",
+      "service_slug": "driving-licence",
+      "service_name": "Driving Licence",
+      "department": "Transport Department (RTO)",
+      "state": "Uttar Pradesh",
+      "district": "Agra",
+      "period_start": "2026-05-01",
+      "period_end": "2026-05-31",
+      "official_fee_reported_inr": "600.00",
+      "additional_amount_reported_inr": "1500.00",
+      "amount_paid_inr": "2100.00",
+      "paid": true,
+      "delay_days": 45,
+      "visits": 3,
+      "status": "validated",
+      "description": "Had to pay extra to the agent. Contact [REDACTED] for details.",
+      "created_at": "2026-06-02T10:15:00.000Z"
+    }
+  ]
+}
 ```
 
 ### CSV (`reports.csv`)
 
-A single header row followed by one row per report, quoted per **RFC 4180** (fields
-containing commas, quotes, or newlines are wrapped in double quotes; embedded quotes are
-doubled). Column order is exactly the order in the reference below.
+A single header row followed by one row per report, quoted per **RFC 4180**: fields
+containing a comma, double quote, CR or LF are wrapped in double quotes with embedded quotes
+doubled; records are separated by **CRLF** (`\r\n`) and the body ends with a trailing CRLF.
+Column order is exactly the order in the reference below.
 
 ```
-public_id,service_slug,service_name,department,state_code,...
-R-a1b2c3d4,driving-licence,Driving Licence,Transport,UP,...
+public_id,service_slug,service_name,department,state,district,period_start,period_end,official_fee_reported_inr,additional_amount_reported_inr,amount_paid_inr,paid,delay_days,visits,status,description,created_at
+R-a1b2c3d4,driving-licence,Driving Licence,Transport Department (RTO),Uttar Pradesh,Agra,2026-05-01,2026-05-31,600.00,1500.00,2100.00,true,45,3,validated,Had to pay extra to the agent. Contact [REDACTED] for details.,2026-06-02T10:15:00.000Z
 ```
 
-Both exports are served with `Cache-Control: no-store` (see [`api.md`](api.md#get-datasets-reports-csv)).
+Both exports are served with `Cache-Control: public, max-age=300` (see [`api.md`](api.md#get-datasets-reports-csv)).
+The dataset contains only already-published reports and changes slowly, so a short shared
+cache lets mirrors and CDNs serve it efficiently.
 
 ## 6. Column reference
 
@@ -123,20 +129,19 @@ Quick reference (exact names and order of the export projection):
 | 2 | `service_slug` | text | no | public |
 | 3 | `service_name` | text | no | public |
 | 4 | `department` | text | no | public |
-| 5 | `state_code` | text | no | public |
-| 6 | `state_name` | text | no | public |
-| 7 | `district_name` | text | no | public |
-| 8 | `period_start` | date | no | public |
-| 9 | `period_end` | date | no | public |
-| 10 | `official_fee_reported_inr` | numeric(12,2) | yes | public |
-| 11 | `additional_amount_reported_inr` | numeric(12,2) | yes | public |
-| 12 | `amount_paid_inr` | numeric(12,2) | yes | public |
-| 13 | `paid` | boolean | no | public |
-| 14 | `delay_days` | integer | yes | public |
-| 15 | `visits` | integer | yes | public |
-| 16 | `redacted_description` | text | no | redacted |
-| 17 | `status` | enum | no | public |
-| 18 | `created_at` | timestamp | no | public |
+| 5 | `state` | text | no | public |
+| 6 | `district` | text | no | public |
+| 7 | `period_start` | date | no | public |
+| 8 | `period_end` | date | no | public |
+| 9 | `official_fee_reported_inr` | numeric(12,2) | yes | public |
+| 10 | `additional_amount_reported_inr` | numeric(12,2) | yes | public |
+| 11 | `amount_paid_inr` | numeric(12,2) | yes | public |
+| 12 | `paid` | boolean | no | public |
+| 13 | `delay_days` | integer | yes | public |
+| 14 | `visits` | integer | yes | public |
+| 15 | `status` | enum | no | public |
+| 16 | `description` | text | no | redacted |
+| 17 | `created_at` | timestamp | no | public |
 
 Detailed reference — one table per column.
 
@@ -179,45 +184,34 @@ Detailed reference — one table per column.
 |---|---|
 | **Type** | text |
 | **Description** | Name of the government department responsible for the service. |
-| **Example** | `Transport` |
+| **Example** | `Transport Department (RTO)` |
 | **Nullable** | no |
 | **Privacy class** | public |
 | **Notes** | Join `services.department_id → departments.name`. |
 
-### 6.5 `state_code`
-
-| | |
-|---|---|
-| **Type** | text (ISO 3166-2:IN) |
-| **Description** | Two-letter code of the state where the experience happened. |
-| **Example** | `UP` |
-| **Nullable** | no |
-| **Privacy class** | public |
-| **Notes** | Join `reports.state_id → states.code`. |
-
-### 6.6 `state_name`
+### 6.5 `state`
 
 | | |
 |---|---|
 | **Type** | text |
-| **Description** | Full name of the state. |
+| **Description** | Full name of the state where the experience happened. The export carries the state **name** only — there is no separate state-code column. |
 | **Example** | `Uttar Pradesh` |
 | **Nullable** | no |
 | **Privacy class** | public |
-| **Notes** | Join `reports.state_id → states.name`. |
+| **Notes** | Join `reports.state_id → states.name`. The ISO 3166-2:IN code is available from the API (`GET /locations/states`) but is not part of the export. |
 
-### 6.7 `district_name`
+### 6.6 `district`
 
 | | |
 |---|---|
 | **Type** | text |
-| **Description** | Name of the district within the state where the experience happened. |
+| **Description** | Name of the district within the state where the experience happened. The export carries the district **name** only. |
 | **Example** | `Agra` |
 | **Nullable** | no |
 | **Privacy class** | public |
 | **Notes** | Join `reports.district_id → districts.name`. |
 
-### 6.8 `period_start`
+### 6.7 `period_start`
 
 | | |
 |---|---|
@@ -228,7 +222,7 @@ Detailed reference — one table per column.
 | **Privacy class** | public |
 | **Notes** | `period_end` must be ≥ `period_start` (enforced at submission). |
 
-### 6.9 `period_end`
+### 6.8 `period_end`
 
 | | |
 |---|---|
@@ -239,7 +233,7 @@ Detailed reference — one table per column.
 | **Privacy class** | public |
 | **Notes** | Must be ≥ `period_start` (enforced at submission). |
 
-### 6.10 `official_fee_reported_inr`
+### 6.9 `official_fee_reported_inr`
 
 | | |
 |---|---|
@@ -250,7 +244,7 @@ Detailed reference — one table per column.
 | **Privacy class** | public |
 | **Notes** | Range 0–10,000,000, multiple of 0.01 at submission. Contrast with `additional_amount_reported_inr` to compute the "gap". |
 
-### 6.11 `additional_amount_reported_inr`
+### 6.10 `additional_amount_reported_inr`
 
 | | |
 |---|---|
@@ -261,7 +255,7 @@ Detailed reference — one table per column.
 | **Privacy class** | public |
 | **Notes** | Range 0–10,000,000, multiple of 0.01. Key input to the median-extra-payment aggregate. |
 
-### 6.12 `amount_paid_inr`
+### 6.11 `amount_paid_inr`
 
 | | |
 |---|---|
@@ -272,7 +266,7 @@ Detailed reference — one table per column.
 | **Privacy class** | public |
 | **Notes** | Range 0–10,000,000, multiple of 0.01. If `paid` is `false`, this is expected to be `null`. |
 
-### 6.13 `paid`
+### 6.12 `paid`
 
 | | |
 |---|---|
@@ -283,40 +277,29 @@ Detailed reference — one table per column.
 | **Privacy class** | public |
 | **Notes** | Not a verdict — a reported fact. |
 
-### 6.14 `delay_days`
+### 6.13 `delay_days`
 
 | | |
 |---|---|
-| **Type** | integer (≥ 0) |
+| **Type** | integer (0–3650) |
 | **Description** | Number of days the citizen reports the service taking beyond the official timeline. |
 | **Example** | `45` |
 | **Nullable** | yes |
 | **Privacy class** | public |
-| **Notes** | `null` when no delay was reported. Key input to the median-delay aggregate. |
+| **Notes** | `null` when no delay was reported. Range 0–3650 at submission. Key input to the median-delay aggregate. |
 
-### 6.15 `visits`
+### 6.14 `visits`
 
 | | |
 |---|---|
-| **Type** | integer (≥ 0) |
+| **Type** | integer (1–50) |
 | **Description** | Number of office visits the citizen reports making for the service. |
 | **Example** | `3` |
 | **Nullable** | yes |
 | **Privacy class** | public |
-| **Notes** | `null` when not reported. Input to the average-visits aggregate. |
+| **Notes** | `null` when not reported. Range 1–50 at submission. Input to the average-visits aggregate. |
 
-### 6.16 `redacted_description`
-
-| | |
-|---|---|
-| **Type** | text |
-| **Description** | The citizen's free-text description of the experience, with PII redacted via `apps/api/src/utils/redaction.ts`. |
-| **Example** | `Had to pay extra to the agent. Contact [REDACTED] for details.` |
-| **Nullable** | no |
-| **Privacy class** | **redacted** |
-| **Notes** | The only column with privacy class `redacted`. Aadhaar, mobile numbers, emails, and card numbers are replaced with `[REDACTED]`. The raw description is never exported. |
-
-### 6.17 `status`
+### 6.15 `status`
 
 | | |
 |---|---|
@@ -327,7 +310,18 @@ Detailed reference — one table per column.
 | **Privacy class** | public |
 | **Notes** | Values: `validated`, `corroborated`, `evidence_backed`, `officially_acknowledged` (see section 1; `submitted`, `rejected`, `withdrawn` never appear). |
 
-### 6.18 `created_at`
+### 6.16 `description`
+
+| | |
+|---|---|
+| **Type** | text |
+| **Description** | The citizen's free-text description of the experience, with PII redacted via `apps/api/src/utils/redaction.ts`. The column is named `description`; its exported content is always the redacted form. |
+| **Example** | `Had to pay extra to the agent. Contact [REDACTED] for details.` |
+| **Nullable** | no |
+| **Privacy class** | **redacted** |
+| **Notes** | The only column with privacy class `redacted`. Aadhaar, mobile numbers, emails, and card numbers are replaced with `[REDACTED]`. The raw description is never exported. |
+
+### 6.17 `created_at`
 
 | | |
 |---|---|
@@ -343,6 +337,10 @@ Detailed reference — one table per column.
 ## 7. Stability
 
 The column names, order, and types in this document are the contract with
-`apps/api/src/services/export.service.ts` (`exportRows`) and are covered by
-`apps/api/test/datasets.test.ts`. Any change to the export projection must be made in both
-places and reflected in the OpenAPI spec served at `/doc/openapi.json`.
+`apps/api/src/services/export.service.ts` (`exportRows` / `EXPORT_COLUMNS` / `toCsv`), which
+is the single source of truth for both the CSV and JSON exports (`apps/api/src/routes/datasets.ts`
+reuses it — it does not maintain its own copy). The projection is covered by
+`apps/api/test/datasets.test.ts`, which asserts the exact CSV header row and the exact JSON
+object keys so this document cannot silently drift from the code. Any change to the export
+projection must be made in `export.service.ts` and reflected here and in the OpenAPI spec
+served at `/doc/openapi.json`.

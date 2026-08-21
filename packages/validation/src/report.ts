@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { dateSchema, inrSchema, uuidSchema } from "./common.js";
+import { dateSchema, inrSchema, slugSchema, uuidSchema } from "./common.js";
 
 export const reportStatusSchema = z.enum([
   "submitted",
@@ -13,7 +13,12 @@ export const reportStatusSchema = z.enum([
 
 export const reportSubmissionSchema = z
   .object({
-    service_id: uuidSchema,
+    // Identify the service by EITHER its uuid (service_id) OR its public slug
+    // (service_slug); exactly one is required (enforced by the refine below).
+    // GET /services and GET /search expose the slug; GET /services/:slug also
+    // exposes the uuid — so a client can submit with whichever it holds.
+    service_id: uuidSchema.optional(),
+    service_slug: slugSchema.optional(),
     state_id: uuidSchema,
     district_id: uuidSchema,
     office_id: uuidSchema.optional(),
@@ -23,9 +28,13 @@ export const reportSubmissionSchema = z
     additional_amount_reported_inr: inrSchema.optional(),
     amount_paid_inr: inrSchema.optional(),
     paid: z.boolean().default(false),
-    delay_days: z.number().int().min(0).optional(),
-    visits: z.number().int().min(1).optional(),
+    delay_days: z.number().int().min(0).max(3650).optional(),
+    visits: z.number().int().min(1).max(50).optional(),
     description: z.string().min(30).max(5000),
+  })
+  .refine((d) => (d.service_id === undefined) !== (d.service_slug === undefined), {
+    message: "exactly one of service_id or service_slug is required",
+    path: ["service_id"],
   })
   .refine((d) => d.period_end >= d.period_start, {
     message: "period_end must be >= period_start",
