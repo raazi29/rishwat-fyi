@@ -270,16 +270,21 @@ const postEvidence: EndpointSpec = {
   auth: "submitter",
   rateLimit: "10 / hour",
   summary:
-    "Upload a supporting file for a report. Body is multipart/form-data; the file part must be a File ≤ 20 MB. Only the submitter may attach evidence, so the one-time token from POST /reports is required alongside the report id. The file is stored under a private key, its sha256 is recorded, and the evidence row is created in status pending_review with retention_until = now + 90 days.",
+    "Upload a supporting file for a report. Body is multipart/form-data; the file part must be a File ≤ 20 MB and one of image/jpeg, image/png, image/webp, image/heic or application/pdf. Only the submitter may attach evidence, so the one-time token from POST /reports is required alongside the report id. The file is stored under a private key, its sha256 is recorded, and the evidence row is created in status pending_review with retention_until = now + 90 days.",
   params: [
-    { name: "file", type: "multipart/form-data", required: true, notes: "a File ≤ 20 MB" },
+    {
+      name: "file",
+      type: "multipart/form-data",
+      required: true,
+      notes: "a File ≤ 20 MB, JPEG / PNG / WebP / HEIC / PDF",
+    },
     { name: "token", type: "string (form)", required: true, notes: "the one-time token from POST /reports" },
     { name: "public_id", type: "string (form)", required: false, notes: "R-xxxxxxxx — use this or report_id" },
     { name: "report_id", type: "uuid (form)", required: false, notes: "internal id — use this or public_id" },
   ],
   response: `{ "id": "<uuid>", "status": "pending_review", "retention_until": "2026-11-18T00:00:00.000Z" }`,
   responseLabel: "Response 201",
-  note: "Oversized files (> 20 MB) and missing file parts return 400. A wrong token and an unknown report both return 404, so this endpoint cannot be used to probe whether a report exists. Evidence is reviewed by moderators and auto-deleted after retention expires.",
+  note: "Oversized files (> 20 MB), an empty file, a missing file part and an unsupported content type all return 400. A wrong token and an unknown report both return 404, so this endpoint cannot be used to probe whether a report exists. Evidence is reviewed by moderators and auto-deleted after retention expires.",
 };
 
 const evidenceMeta: EndpointSpec = {

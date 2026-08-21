@@ -6,7 +6,17 @@ import { Button } from "@/components/ui";
 import { AlertIcon, CloseIcon, DocumentIcon } from "@/components/icons";
 
 const MAX_BYTES = 20 * 1024 * 1024;
-const ACCEPT = "image/png,image/jpeg,image/webp,application/pdf";
+// Mirrors ALLOWED_MIME in apps/api/src/routes/evidence.ts. HEIC is included
+// because that is what an iPhone camera produces by default; leaving it out
+// silently blocked the most common photo on the platform.
+const ACCEPT = "image/png,image/jpeg,image/webp,image/heic,application/pdf";
+const ACCEPTED_TYPES = new Set([
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+  "image/heic",
+  "application/pdf",
+]);
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -44,6 +54,15 @@ export function EvidenceUpload({
       if (inputRef.current) inputRef.current.value = "";
       return;
     }
+    // The API rejects anything outside the allow-list with a 400, and that
+    // rejection would arrive after the report was already filed. Catch it here
+    // instead, while the person can still choose another file.
+    if (selected.type !== "" && !ACCEPTED_TYPES.has(selected.type)) {
+      setError("That file type cannot be attached. Use a PNG, JPG, WebP, HEIC or PDF file.");
+      onSelect(null);
+      if (inputRef.current) inputRef.current.value = "";
+      return;
+    }
     setError(null);
     onSelect(selected);
   };
@@ -53,8 +72,8 @@ export function EvidenceUpload({
       <span className="text-label font-medium text-ink">Evidence (optional)</span>
       <p id={descId} className="text-label text-ink-muted">
         Screenshots, receipts or photos help verification. Files are private, reviewed only by a
-        moderator, and automatically deleted 90 days after upload. Maximum 20 MB (PNG, JPG, WebP or
-        PDF). Do not upload anything showing your name or other personal details.
+        moderator, and automatically deleted 90 days after upload. Maximum 20 MB (PNG, JPG, WebP,
+        HEIC or PDF). Do not upload anything showing your name or other personal details.
       </p>
 
       <input
