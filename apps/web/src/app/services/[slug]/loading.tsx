@@ -7,11 +7,11 @@ export default function ServiceDetailLoading() {
     <Container>
       <div className="py-6" aria-busy="true">
         <Skeleton className="h-4 w-72" />
-        <div className="mt-4 flex items-start justify-between gap-4">
-          <div className="space-y-3">
-            <Skeleton className="h-9 w-64" />
-            <Skeleton className="h-5 w-56" />
-            <Skeleton className="h-4 w-72" />
+        <div className="mt-4 flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0 space-y-3">
+            <Skeleton className="h-9 w-full max-w-64" />
+            <Skeleton className="h-5 w-full max-w-56" />
+            <Skeleton className="h-4 w-full max-w-72" />
           </div>
           <div className="flex gap-2">
             <Skeleton className="h-11 w-20" />

@@ -107,14 +107,10 @@ export default async function SearchPage({
       <div className="space-y-6 py-6 lg:py-8">
         <SearchTopBar query={read.q} location={location} />
 
+        {/* Results come first in the DOM so the h1 precedes the filter rail's
+            heading; the rail is placed back into column 1 on desktop. */}
         <div className="grid gap-6 lg:grid-cols-[264px_1fr]">
-          <aside className="hidden lg:block">
-            <div className="sticky top-20">
-              <SearchFilters {...filtersProps} formId="rail" />
-            </div>
-          </aside>
-
-          <div className="min-w-0 space-y-5">
+          <div className="min-w-0 space-y-5 lg:col-start-2 lg:row-start-1">
             {sample ? <SampleDataStrip reason={sampleReason} /> : null}
 
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -158,6 +154,12 @@ export default async function SearchPage({
               </>
             )}
           </div>
+
+          <aside className="hidden lg:col-start-1 lg:row-start-1 lg:block">
+            <div className="sticky top-20">
+              <SearchFilters {...filtersProps} formId="rail" />
+            </div>
+          </aside>
         </div>
       </div>
     </Container>

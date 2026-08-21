@@ -34,11 +34,26 @@ export function SubmittedScreen({ sampleReceipt }: { sampleReceipt: ReportReceip
     setMounted(true);
   }, []);
 
+  // The receipt lives in sessionStorage, so the confirmation body can only be
+  // rendered after mount. The heading is rendered in both branches so the page
+  // always has an <h1> — for assistive technology and for a reader without JS,
+  // who otherwise saw two grey blocks and no explanation.
   if (!mounted) {
     return (
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
-        <Skeleton className="h-[28rem] w-full" />
-        <Skeleton className="h-[28rem] w-full" />
+      <div className="space-y-8">
+        <div className="rounded-lg border border-line bg-surface p-6 text-center sm:p-8">
+          <h1 className="font-serif text-h1 font-bold text-ink">
+            Thank you for sharing your experience!
+          </h1>
+          <p className="mx-auto mt-3 max-w-[52ch] text-body text-ink-secondary">
+            Your report ID and one-time token are held in this browser only, never on our
+            servers, so the confirmation below is assembled on your device.
+          </p>
+        </div>
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+          <Skeleton className="h-[24rem] w-full" />
+          <Skeleton className="h-[24rem] w-full" />
+        </div>
       </div>
     );
   }
@@ -48,6 +63,8 @@ export function SubmittedScreen({ sampleReceipt }: { sampleReceipt: ReportReceip
   if (!active) {
     return (
       <div className="rounded-lg border border-line bg-surface">
+        {/* EmptyState carries the visible title; the page still needs a heading. */}
+        <h1 className="sr-only">Report confirmation</h1>
         <EmptyState
           icon={<DocumentIcon />}
           title="No recent submission to show"
@@ -100,6 +117,16 @@ export function SubmittedScreen({ sampleReceipt }: { sampleReceipt: ReportReceip
             <span className="font-semibold">Your report is now under review.</span> We will process
             it as per our verification system.
           </Callout>
+
+          {/* The report itself was saved; only the optional file failed. Say so
+              plainly — the reporter is the only person who still has that file. */}
+          {active.evidenceAttached === false ? (
+            <Callout tone="notice" title="Your file was not attached" className="mt-4">
+              Your report was submitted successfully, but the supporting file could not be uploaded.
+              Keep the file safe — you can attach it later using the report ID and one-time token
+              above.
+            </Callout>
+          ) : null}
         </div>
 
         <div className="space-y-8">

@@ -82,7 +82,7 @@ export function MobileNav({ className }: { className?: string }) {
                         <Link
                           key={leaf.href}
                           href={leaf.href}
-                          className="block rounded-sm py-2.5 pl-6 pr-3 text-body text-ink-secondary transition-colors duration-150 hover:bg-sunken hover:text-ink"
+                          className="flex min-h-11 items-center rounded-sm py-2.5 pl-6 pr-3 text-body text-ink-secondary transition-colors duration-150 hover:bg-sunken hover:text-ink"
                         >
                           {leaf.label}
                         </Link>
@@ -93,7 +93,7 @@ export function MobileNav({ className }: { className?: string }) {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className="block border-b border-line-inner px-3 py-3.5 text-body font-medium text-ink transition-colors duration-150 hover:bg-sunken"
+                    className="flex min-h-11 items-center border-b border-line-inner px-3 py-3.5 text-body font-medium text-ink transition-colors duration-150 hover:bg-sunken"
                   >
                     {item.label}
                   </Link>

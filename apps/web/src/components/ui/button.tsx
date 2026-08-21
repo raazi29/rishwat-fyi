@@ -19,8 +19,9 @@ const VARIANTS: Record<ButtonVariant, string> = {
 };
 
 const SIZES: Record<ButtonSize, string> = {
-  // 44px minimum touch target on md and lg — the reporter is one-handed on a phone.
-  sm: "min-h-9 px-3 text-label",
+  // md and lg clear 44px everywhere. sm stays dense for mouse-driven admin and
+  // toolbar rows, but grows to 44px on touch pointers, where the reporter is.
+  sm: "min-h-9 px-3 text-label pointer-coarse:min-h-11",
   md: "min-h-11 px-4 text-label",
   lg: "min-h-12 px-5 text-body",
 };

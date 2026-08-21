@@ -26,14 +26,20 @@ export default async function ReportPage() {
 
         {source === "sample" ? <SampleDataStrip reason={reason} className="mb-6" /> : null}
 
+        {/* The wizard is first in the DOM so the page's h1 precedes the rails'
+            headings and so a phone reader lands on the form, not the rails.
+            Explicit column placement keeps the desktop order rail / form / tips. */}
         <div className="grid gap-8 xl:grid-cols-[288px_minmax(0,1fr)_264px]">
-          <aside aria-label="Your privacy and what you can report" className="xl:col-start-1 xl:row-start-1">
-            <TrustRail />
-          </aside>
-
           <div className="xl:col-start-2 xl:row-start-1">
             <ReportWizard geo={geo} />
           </div>
+
+          <aside
+            aria-label="Your privacy and what you can report"
+            className="xl:col-start-1 xl:row-start-1"
+          >
+            <TrustRail />
+          </aside>
 
           <aside aria-label="Tips and anonymity" className="xl:col-start-3 xl:row-start-1">
             <TipsRail />
