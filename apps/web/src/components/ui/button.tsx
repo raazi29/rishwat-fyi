@@ -6,24 +6,30 @@ import { cn } from "@/lib/utils/cn";
 export type ButtonVariant = "primary" | "secondary" | "quiet" | "ghost";
 export type ButtonSize = "sm" | "md" | "lg";
 
+/**
+ * Airbnb-style button vocabulary: pill radius, semibold 600 weight, clean
+ * black primary, white secondary with a fine hairline, and a gentle lift shadow
+ * on hover so the surface feels touchable without being noisy at rest.
+ */
+
 const BASE =
-  "inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors duration-150 select-none disabled:cursor-not-allowed disabled:opacity-55 aria-disabled:cursor-not-allowed aria-disabled:opacity-55";
+  "inline-flex items-center justify-center gap-2 rounded-full font-semibold transition-all duration-200 ease-out select-none disabled:cursor-not-allowed disabled:opacity-50 aria-disabled:cursor-not-allowed aria-disabled:opacity-50";
 
 const VARIANTS: Record<ButtonVariant, string> = {
-  primary: "bg-official text-white hover:bg-official-deep active:bg-official-deep",
+  primary:
+    "bg-ink text-white hover:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.25)] hover:scale-[1.02] active:scale-[0.98] active:shadow-none",
   secondary:
-    "border border-line bg-surface text-ink hover:bg-sunken active:bg-sunken",
+    "border border-line bg-surface text-ink hover:border-ink/30 hover:shadow-[0_2px_8px_-2px_rgba(0,0,0,0.12)] active:scale-[0.98]",
   quiet:
-    "text-official-mid underline decoration-line-inner decoration-2 underline-offset-4 hover:decoration-official-mid",
-  ghost: "text-ink-secondary hover:bg-sunken hover:text-ink",
+    "text-official-mid underline decoration-transparent decoration-[1.5px] underline-offset-4 hover:decoration-current",
+  ghost:
+    "text-ink-secondary hover:bg-ink/[0.04] hover:text-ink active:bg-ink/[0.06]",
 };
 
 const SIZES: Record<ButtonSize, string> = {
-  // md and lg clear 44px everywhere. sm stays dense for mouse-driven admin and
-  // toolbar rows, but grows to 44px on touch pointers, where the reporter is.
-  sm: "min-h-9 px-3 text-label pointer-coarse:min-h-11",
-  md: "min-h-11 px-4 text-label",
-  lg: "min-h-12 px-5 text-body",
+  sm: "min-h-9 px-4 text-label pointer-coarse:min-h-11",
+  md: "min-h-[44px] px-5 text-label",
+  lg: "min-h-12 px-6 text-body",
 };
 
 interface CommonProps {
