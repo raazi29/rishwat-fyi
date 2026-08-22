@@ -5,6 +5,11 @@ import { DownloadIcon } from "@/components/icons";
 import { CodeBlock, DocLayout, DocSection, DocTable, Prose, type TableOfContentsItem } from "@/components/doc";
 import { datasetDownloadUrl, getDatasetIndex } from "@/lib/api";
 
+// Request-time rendering: content comes from the API, a separate deployment
+// not guaranteed reachable at build time. See app/page.tsx for the full
+// rationale (build must not depend on a live API; the fetch cache still applies).
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Mirroring the data",
   description:

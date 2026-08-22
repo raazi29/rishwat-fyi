@@ -11,6 +11,19 @@ import {
 } from "@/components/home";
 import { getPlatformTotals, getStateGaps } from "@/lib/api";
 
+/**
+ * Request-time rendering. This page's content comes from the API, and the
+ * API is a separate deployment that is not guaranteed to be reachable while
+ * the site is being built. Prerendering it would make `next build` depend on
+ * a live API, and with the sample-data kill switch on
+ * (NEXT_PUBLIC_ALLOW_SAMPLE_FALLBACK=false) an outage during the build would
+ * fail the deploy instead of surfacing as an outage to readers. The fetch
+ * layer still caches: `force-dynamic` only zeroes revalidate for fetches
+ * with no explicit cache config, and src/lib/api/* always sets
+ * `next.revalidate` explicitly, so the 300s/120s data-cache tiers survive.
+ */
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: { absolute: "Rishwat.fyi — What should government cost you?" },
   description:

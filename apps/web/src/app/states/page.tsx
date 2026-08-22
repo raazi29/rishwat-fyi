@@ -13,6 +13,11 @@ import {
 } from "@/components/geo";
 import { cn } from "@/lib/utils/cn";
 
+// Request-time rendering: content comes from the API, a separate deployment
+// not guaranteed reachable at build time. See app/page.tsx for the full
+// rationale (build must not depend on a live API; the fetch cache still applies).
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "States",
   description:

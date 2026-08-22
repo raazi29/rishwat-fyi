@@ -7,6 +7,11 @@ import { getComparisonRows, listDepartments, type ComparisonRow } from "@/lib/ap
 import { DepartmentFilter } from "@/components/service/department-filter";
 import { ServiceGroup } from "@/components/service/service-group";
 
+// Request-time rendering: content comes from the API, a separate deployment
+// not guaranteed reachable at build time. See app/page.tsx for the full
+// rationale (build must not depend on a live API; the fetch cache still applies).
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Government services",
   description:

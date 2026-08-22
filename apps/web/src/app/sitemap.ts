@@ -2,6 +2,15 @@ import type { MetadataRoute } from "next";
 
 import { SampleFallbackDisabledError, listDepartments, listServices, listStates } from "@/lib/api";
 
+// Request-time rendering: the catalogue slugs come from the API, a separate
+// deployment not guaranteed reachable while the site is being built (see
+// app/page.tsx for the full rationale). Prerendering this at build time with the
+// sample-data kill switch on (NEXT_PUBLIC_ALLOW_SAMPLE_FALLBACK=false) would fail
+// the deploy on an unreachable API; worse, a build that *did* reach a degraded
+// API could bake a catalogue-less sitemap in until the next deploy. Rendered on
+// demand, the sitemap reflects the live catalogue and any API outage is transient.
+export const dynamic = "force-dynamic";
+
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/$/, "");
 
 type ChangeFrequency = NonNullable<MetadataRoute.Sitemap[number]["changeFrequency"]>;
@@ -41,10 +50,14 @@ const STATIC_ROUTES: StaticRoute[] = [
 ];
 
 /**
- * Enumerating a catalogue is best-effort: with the sample-data kill switch on
- * (`NEXT_PUBLIC_ALLOW_SAMPLE_FALLBACK=false`) an unreachable API throws, and a
- * sitemap that lists the static surface is far better than a build that fails
- * or a route that 500s. Any other error is a real bug and stays unhandled.
+ * Enumerating a catalogue is best-effort. This route renders at request time
+ * (see `export const dynamic` above), so an unreachable API no longer fails the
+ * build — the risk it guards against is now a request-time outage. With the
+ * sample-data kill switch on (`NEXT_PUBLIC_ALLOW_SAMPLE_FALLBACK=false`) an
+ * unreachable API throws; serving a sitemap that still lists the static surface
+ * is far better than a route that 500s, and the next request re-enumerates once
+ * the API is back. This catch is that defence in depth. Any other error is a
+ * real bug and stays unhandled.
  */
 async function enumerate<T>(
   load: () => Promise<{ data: T[] }>,

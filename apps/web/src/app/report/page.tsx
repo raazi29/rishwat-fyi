@@ -9,6 +9,11 @@ import { TipsRail } from "@/components/report/tips-rail";
 import { CommitmentBand } from "@/components/report/commitment-band";
 import { ReportWizard } from "@/components/report/report-wizard";
 
+// Request-time rendering: the wizard's catalogue/geo comes from the API, a
+// separate deployment not guaranteed reachable at build time. See app/page.tsx
+// for the full rationale (build must not depend on a live API; caching applies).
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Share your experience",
   description:
