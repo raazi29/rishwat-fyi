@@ -51,6 +51,13 @@ export function createDb(url: string) {
     // 30s default would burn that in two polls and fail an otherwise-healthy
     // deploy instead of reporting "degraded".
     connect_timeout: 10,
+
+    // Managed providers (Supabase in particular) drop idle connections and
+    // silently eat half-open sockets. Without keep-alives the first request
+    // after an quiet stretch pays a dead-connection round-trip or an ECONNRESET;
+    // with them the pool notices a dying socket before a caller does.
+    idle_timeout: 60,
+    keep_alive: true,
   });
   return { db: drizzle(client, { schema }), client };
 }

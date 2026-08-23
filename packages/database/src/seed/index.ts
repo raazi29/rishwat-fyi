@@ -13,6 +13,28 @@ const { db, client } = createDb(url);
 
 type Row = { id: string };
 
+const MAX_RETRIES = 3;
+const RETRY_DELAY_MS = 1000;
+
+async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      return await fn();
+    } catch (err: unknown) {
+      const isConnReset =
+        err instanceof Error &&
+        ((err as any).cause?.code === "ECONNRESET" || err.message.includes("ECONNRESET"));
+      if (isConnReset && attempt < MAX_RETRIES) {
+        console.warn(`  ⚠ ECONNRESET on attempt ${attempt}, retrying in ${RETRY_DELAY_MS}ms…`);
+        await new Promise((r) => setTimeout(r, RETRY_DELAY_MS * attempt));
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw new Error("unreachable");
+}
+
 /**
  * Idempotent upsert: look up by natural key first; insert only when missing.
  * `onConflictDoNothing()` on the insert covers the (single-process) race where
@@ -22,13 +44,15 @@ async function upsertBy(
   find: () => Promise<Row[]>,
   create: () => Promise<Row[]>,
 ): Promise<{ id: string; created: boolean }> {
-  const existing = await find();
-  if (existing[0]) return { id: existing[0].id, created: false };
-  const inserted = await create();
-  if (inserted[0]) return { id: inserted[0].id, created: true };
-  const again = await find();
-  if (again[0]) return { id: again[0].id, created: false };
-  throw new Error("upsert failed to produce a row");
+  return withRetry(async () => {
+    const existing = await find();
+    if (existing[0]) return { id: existing[0].id, created: false };
+    const inserted = await create();
+    if (inserted[0]) return { id: inserted[0].id, created: true };
+    const again = await find();
+    if (again[0]) return { id: again[0].id, created: false };
+    throw new Error("upsert failed to produce a row");
+  });
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
