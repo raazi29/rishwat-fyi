@@ -40,6 +40,30 @@ export type { FieldControlProps, RadioOption } from "./field";
 // Search composite
 export { SearchField } from "./search-field";
 
+// Custom controls (dependency-free select + combobox)
+export { CustomSelect } from "./custom-select";
+export type { CustomSelectProps } from "./custom-select";
+export { Combobox } from "./combobox";
+export type { ComboboxProps } from "./combobox";
+export { SelectOverlay, SHEET_MEDIA_QUERY } from "./select-overlay";
+export type { SelectOverlayProps } from "./select-overlay";
+export { OptionList } from "./option-list";
+export type { OptionListProps } from "./option-list";
+export {
+  filterOptions,
+  optionMatchesQuery,
+  foldForSearch,
+  indexOfValue,
+  firstEnabledIndex,
+  lastEnabledIndex,
+  stepEnabledIndex,
+  typeaheadIndex,
+  isTypeaheadKey,
+  isAriaInvalid,
+  optionDomId,
+} from "./select-types";
+export type { SelectOption, BaseSelectProps } from "./select-types";
+
 // Table primitives
 export { TableShell, THead, Th, Td, NumericTd, RowLink } from "./table";
 

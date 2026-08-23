@@ -1,13 +1,20 @@
-import { Checkbox, Field, NativeSelect, TextInput } from "@/components/ui";
+import { Checkbox, CustomSelect, Field, TextInput, type SelectOption } from "@/components/ui";
 
 import type { StepProps } from "../wizard-types";
 import { DELAY_UNITS, type DelayUnit } from "../wizard-types";
 
+/** Delay unit choices for the CustomSelect, labels title-cased for display. */
+const DELAY_UNIT_OPTIONS: SelectOption[] = DELAY_UNITS.map((unit) => ({
+  value: unit,
+  label: unit.charAt(0).toUpperCase() + unit.slice(1),
+}));
+
 /**
  * Step 3 — Payments & Visits. Every field here is optional; the reporter shares
  * only the numbers they remember. Money is entered in whole rupees (validated
- * against the shared `inrSchema` on advance), delay as a number plus a unit,
- * and visits as a whole count. Errors surface through `Field` (icon + message).
+ * against the shared `inrSchema` on advance), delay as a number plus a unit
+ * (a `CustomSelect`), and visits as a whole count. Errors surface through
+ * `Field` (icon + message).
  */
 export function StepPayments({ data, errors, set }: StepProps) {
   return (
@@ -86,18 +93,14 @@ export function StepPayments({ data, errors, set }: StepProps) {
                 className="flex-1"
                 onChange={(event) => set({ delayValue: event.target.value })}
               />
-              <NativeSelect
-                aria-label="Delay unit"
-                value={data.delayUnit}
-                className="w-32"
-                onChange={(event) => set({ delayUnit: event.target.value as DelayUnit })}
-              >
-                {DELAY_UNITS.map((unit) => (
-                  <option key={unit} value={unit}>
-                    {unit}
-                  </option>
-                ))}
-              </NativeSelect>
+              <div className="w-32 shrink-0">
+                <CustomSelect
+                  aria-label="Delay unit"
+                  value={data.delayUnit}
+                  onValueChange={(value) => set({ delayUnit: value as DelayUnit })}
+                  options={DELAY_UNIT_OPTIONS}
+                />
+              </div>
             </div>
           )}
         </Field>

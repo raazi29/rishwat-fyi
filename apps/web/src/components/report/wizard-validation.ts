@@ -53,9 +53,27 @@ function validateServiceLocation(data: WizardData, geo: WizardGeo): FieldErrors 
   } else if (!geo.services.some((s) => s.slug === data.serviceSlug)) {
     errors.serviceSlug = "Choose a service from the list.";
   }
-  if (!data.stateCode) errors.stateCode = "Choose a state.";
-  if (!data.districtId) errors.districtId = "Choose a district.";
-  if (!data.cityId) errors.cityId = "Choose a city or office.";
+  if (!data.stateCode) {
+    errors.stateCode = "Choose a state.";
+  } else if (!geo.states.some((s) => s.code === data.stateCode)) {
+    errors.stateCode = "Choose a state from the list.";
+  }
+  if (!data.districtId) {
+    errors.districtId = "Choose a district.";
+  } else if (data.stateCode) {
+    // The chosen district must belong to the chosen state.
+    const districts = geo.districtsByState[data.stateCode] ?? [];
+    if (!districts.some((d) => d.id === data.districtId)) {
+      errors.districtId = "Choose a district in the selected state.";
+    }
+  }
+  // City is optional — but a nonempty city must belong to the chosen district.
+  if (data.cityId && data.districtId) {
+    const cities = geo.citiesByDistrict[data.districtId] ?? [];
+    if (!cities.some((c) => c.id === data.cityId)) {
+      errors.cityId = "Choose a city in the selected district.";
+    }
+  }
   if (!data.period) {
     errors.period = "Tell us roughly when this happened.";
   } else {
@@ -64,7 +82,7 @@ function validateServiceLocation(data: WizardData, geo: WizardGeo): FieldErrors 
       errors.period = "That period could not be used. Choose another.";
     }
   }
-  if (!data.frequency) errors.frequency = "Tell us how often you faced this.";
+  // Frequency is optional context — never a blocking requirement.
   return errors;
 }
 

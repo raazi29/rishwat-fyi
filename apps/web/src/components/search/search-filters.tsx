@@ -4,23 +4,28 @@ import {
   Button,
   Callout,
   Field,
-  NativeSelect,
   RadioGroup,
   type RadioOption,
+  type SelectOption,
 } from "@/components/ui";
+import { FormSelect } from "@/components/ui/form-select";
 import { InfoIcon } from "@/components/icons";
 
 /**
- * The search-results filter rail ("Refine your search"). It is a plain
- * `<form method="get" action="/search">` so it works without JavaScript: every
- * control is submitted together when "Apply filters" is pressed, and the server
- * re-renders with the new query. Location is expressed by NAME to match the
- * `/search` contract; dependent options (districts of the chosen state, cities
- * of the chosen district) are computed server-side and passed in.
+ * The search-results filter rail ("Refine your search"), a
+ * `<form method="get" action="/search">`: pressing "Apply filters" submits
+ * every control together and the server re-renders with the new query.
  *
- * The API exposes no service-type or city filter, so those controls are honest
- * placeholders that mirror the reference board — they never fabricate a filter
- * the data layer cannot honour.
+ * Department, service type, state, district and city are the custom
+ * CustomSelect / Combobox controls (via {@link FormSelect}). Each keeps a
+ * synchronized hidden `<input>`, so the GET contract is unchanged: the exact
+ * parameter names are preserved and location is still expressed by NAME to
+ * match the `/search` contract, while the sort radios and query term submit
+ * natively. Dependent options (districts of the chosen state, cities of the
+ * chosen district) are computed server-side and passed in; changing a parent
+ * select takes effect on the next Apply, exactly as with the native selects it
+ * replaces. The API exposes no service-type filter, so that control stays an
+ * honest single-option placeholder that mirrors the reference board.
  */
 
 export interface SearchFiltersProps {
@@ -61,6 +66,27 @@ export function SearchFilters({
   const hasState = state.length > 0;
   const hasDistrict = district.length > 0;
 
+  // The leading empty option preserves the native "All …" choice: value "" is
+  // submitted as an empty parameter (i.e. no filter), exactly as before, and
+  // stays selectable so the user can clear one filter without "Clear all".
+  const departmentOptions: SelectOption[] = [
+    { value: "", label: "All departments" },
+    ...departments.map((entry) => ({ value: entry.slug, label: entry.name })),
+  ];
+  const serviceTypeOptions: SelectOption[] = [{ value: "", label: "All types" }];
+  const stateOptions: SelectOption[] = [
+    { value: "", label: "All states" },
+    ...states.map((entry) => ({ value: entry.name, label: entry.name })),
+  ];
+  const districtOptions: SelectOption[] = [
+    { value: "", label: "All districts" },
+    ...districts.map((entry) => ({ value: entry.name, label: entry.name })),
+  ];
+  const cityOptions: SelectOption[] = [
+    { value: "", label: "All" },
+    ...cities.map((entry) => ({ value: entry.name, label: entry.name })),
+  ];
+
   return (
     <form method="get" action="/search" className="flex flex-col gap-6" aria-label="Refine search">
       {/* Preserve the current query term across a filter submit. */}
@@ -74,14 +100,16 @@ export function SearchFilters({
       </div>
 
       <Field label="Department" htmlFor={`${formId}-department`}>
-        <NativeSelect id={`${formId}-department`} name="department" defaultValue={department}>
-          <option value="">All departments</option>
-          {departments.map((entry) => (
-            <option key={entry.slug} value={entry.slug}>
-              {entry.name}
-            </option>
-          ))}
-        </NativeSelect>
+        <FormSelect
+          variant="combobox"
+          id={`${formId}-department`}
+          name="department"
+          options={departmentOptions}
+          defaultValue={department}
+          placeholder="All departments"
+          searchPlaceholder="Search departments…"
+          aria-label="Department"
+        />
       </Field>
 
       <Field
@@ -89,39 +117,45 @@ export function SearchFilters({
         htmlFor={`${formId}-service-type`}
         hint="Every service of the selected department is shown."
       >
-        <NativeSelect id={`${formId}-service-type`} name="service_type" defaultValue="">
-          <option value="">All types</option>
-        </NativeSelect>
+        <FormSelect
+          variant="select"
+          id={`${formId}-service-type`}
+          name="service_type"
+          options={serviceTypeOptions}
+          defaultValue=""
+          placeholder="All types"
+          aria-label="Service type"
+        />
       </Field>
 
       <fieldset className="flex flex-col gap-4">
         <legend className="text-label font-medium text-ink">Location</legend>
 
         <Field label="State" htmlFor={`${formId}-state`}>
-          <NativeSelect id={`${formId}-state`} name="state" defaultValue={state}>
-            <option value="">All states</option>
-            {states.map((entry) => (
-              <option key={entry.code} value={entry.name}>
-                {entry.name}
-              </option>
-            ))}
-          </NativeSelect>
+          <FormSelect
+            variant="combobox"
+            id={`${formId}-state`}
+            name="state"
+            options={stateOptions}
+            defaultValue={state}
+            placeholder="All states"
+            searchPlaceholder="Search states…"
+            aria-label="State"
+          />
         </Field>
 
         <Field label="District" htmlFor={`${formId}-district`}>
-          <NativeSelect
+          <FormSelect
+            variant="combobox"
             id={`${formId}-district`}
             name="district"
+            options={districtOptions}
             defaultValue={district}
             disabled={!hasState}
-          >
-            <option value="">{hasState ? "All districts" : "Choose a state first"}</option>
-            {districts.map((entry) => (
-              <option key={entry.code} value={entry.name}>
-                {entry.name}
-              </option>
-            ))}
-          </NativeSelect>
+            placeholder={hasState ? "All districts" : "Choose a state first"}
+            searchPlaceholder="Search districts…"
+            aria-label="District"
+          />
         </Field>
 
         <Field
@@ -129,19 +163,17 @@ export function SearchFilters({
           htmlFor={`${formId}-city`}
           hint="Results are grouped by district."
         >
-          <NativeSelect
+          <FormSelect
+            variant="combobox"
             id={`${formId}-city`}
             name="city"
+            options={cityOptions}
             defaultValue={city}
             disabled={!hasDistrict}
-          >
-            <option value="">{hasDistrict ? "All" : "Choose a district first"}</option>
-            {cities.map((entry) => (
-              <option key={entry.id} value={entry.name}>
-                {entry.name}
-              </option>
-            ))}
-          </NativeSelect>
+            placeholder={hasDistrict ? "All" : "Choose a district first"}
+            searchPlaceholder="Search cities…"
+            aria-label="City / Office"
+          />
         </Field>
       </fieldset>
 

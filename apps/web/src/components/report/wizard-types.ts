@@ -108,41 +108,45 @@ export interface StepDef {
   intro: string;
 }
 
-/** The five steps, with the sub-labels shown under each node on the board. */
+/**
+ * The five steps. Headings no longer carry a numeric prefix — the compact
+ * progress header communicates position (design spec §Copy). `subLabel` is
+ * retained as a short accessible description of each step's purpose.
+ */
 export const WIZARD_STEPS: StepDef[] = [
   {
     id: "service-location",
-    title: "Service & Location",
+    title: "Service & location",
     subLabel: "Where did this happen?",
-    heading: "1. Service & Location",
+    heading: "Service & location",
     intro: "Tell us which service and where this experience happened.",
   },
   {
     id: "experience",
-    title: "Experience Details",
+    title: "Experience details",
     subLabel: "What happened?",
-    heading: "2. Experience Details",
+    heading: "Experience details",
     intro: "Select everything that applies. This helps us group similar experiences.",
   },
   {
     id: "payments-visits",
-    title: "Payments & Visits",
+    title: "Payments & visits",
     subLabel: "Money, time & visits",
-    heading: "3. Payments & Visits",
+    heading: "Payments & visits",
     intro: "Share the numbers you remember. Every field here is optional.",
   },
   {
     id: "description",
     title: "Description",
     subLabel: "Tell us more",
-    heading: "4. Description",
+    heading: "Description",
     intro: "Describe what happened in your own words. Do not include personal information.",
   },
   {
     id: "review",
-    title: "Review & Submit",
+    title: "Review & submit",
     subLabel: "Review your report",
-    heading: "5. Review & Submit",
+    heading: "Review & submit",
     intro: "Check your answers. You are anonymous — no personal information is required.",
   },
 ];

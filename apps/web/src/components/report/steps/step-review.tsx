@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 import { Callout } from "@/components/ui";
-import { ShieldCheckIcon } from "@/components/icons";
+import { AlertIcon, ShieldCheckIcon } from "@/components/icons";
 import { formatInr } from "@/lib/utils/format";
 
 import type { StepProps } from "../wizard-types";
@@ -132,6 +132,12 @@ export function StepReview({
       <Callout tone="official" icon={<ShieldCheckIcon size={20} />} title="You are anonymous">
         No personal information is required or stored. When you submit, you will receive a report ID
         and a one-time token to check its status later.
+      </Callout>
+
+      <Callout tone="notice" icon={<AlertIcon size={20} />} title="Save your one-time status token">
+        The status token is shown only once, right after you submit. It cannot be recovered or
+        resent, and it is the only way to check your report&rsquo;s status later — copy it somewhere
+        safe when it appears.
       </Callout>
     </div>
   );

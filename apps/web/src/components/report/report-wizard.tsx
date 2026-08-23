@@ -14,20 +14,24 @@ import {
   type WizardData,
   type WizardGeo,
 } from "./wizard-types";
-import { clearDraft, loadDraft, resolveSelections, saveDraft } from "./wizard-logic";
+import {
+  clearDraft,
+  loadDraft,
+  pruneStaleSelections,
+  resolveSelections,
+  saveDraft,
+} from "./wizard-logic";
 import { stepForField, validatePayload, validateStep } from "./wizard-validation";
 import { saveReceipt, type ReportReceipt } from "./report-receipt";
 import { submitReportAction, uploadEvidenceAction } from "./actions";
+import { TrustRail } from "./trust-rail";
 import { StepServiceLocation } from "./steps/step-service-location";
 import { StepExperience } from "./steps/step-experience";
 import { StepPayments } from "./steps/step-payments";
 import { StepDescription } from "./steps/step-description";
 import { StepReview } from "./steps/step-review";
 
-const STEP_ITEMS: StepItem[] = WIZARD_STEPS.map((step) => ({
-  title: step.title,
-  description: step.subLabel,
-}));
+const STEP_ITEMS: StepItem[] = WIZARD_STEPS.map((step) => ({ title: step.title }));
 
 function earliestErrorStep(errors: FieldErrors, fallback: number): number {
   const keys = Object.keys(errors) as (keyof WizardData)[];
@@ -43,14 +47,27 @@ export function ReportWizard({ geo }: { geo: WizardGeo }) {
   const [draftSaved, setDraftSaved] = useState(false);
   const [live, setLive] = useState("");
   const headingRef = useRef<HTMLLegendElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
   const prevStep = useRef(0);
+  const didHydrate = useRef(false);
+  // Set just before a navigation/submit that failed validation, so the focus
+  // effect below moves focus to the first invalid control instead of the step
+  // heading. Reset once consumed.
+  const focusInvalid = useRef(false);
 
-  // Restore any saved draft once, on mount.
+  // Restore any saved draft once, on mount. Stale selections (a service,
+  // district, or city that no longer exists in the current catalogue) are
+  // pruned before the reducer ever sees them, so a rehydrated draft cannot
+  // carry a dangling id into validation or the payload.
   useEffect(() => {
+    if (didHydrate.current) return;
+    didHydrate.current = true;
     const draft = loadDraft();
-    if (draft) dispatch({ type: "hydrate", data: draft.data, step: draft.step });
+    if (draft) {
+      dispatch({ type: "hydrate", data: pruneStaleSelections(draft.data, geo), step: draft.step });
+    }
     setHydrated(true);
-  }, []);
+  }, [geo]);
 
   // Persist the draft on every change, once hydrated.
   useEffect(() => {
@@ -58,14 +75,26 @@ export function ReportWizard({ geo }: { geo: WizardGeo }) {
     saveDraft(state.data, state.step);
   }, [hydrated, state.data, state.step]);
 
-  // Move focus to the step heading and announce the step after an advance.
+  // Move focus to the step heading and announce the step after an advance —
+  // unless a failed validation asked for the first invalid field instead.
   useEffect(() => {
     if (!hydrated || prevStep.current === state.step) return;
     prevStep.current = state.step;
+    if (focusInvalid.current) return;
     headingRef.current?.focus();
     const step = WIZARD_STEPS[state.step];
     if (step) setLive(`Step ${state.step + 1} of ${TOTAL_STEPS}: ${step.title}`);
   }, [hydrated, state.step]);
+
+  // After a failed navigation or submit, move focus to the first invalid field
+  // so a keyboard or screen-reader user lands exactly where a fix is needed.
+  // Defined after the heading effect so it wins when both would run.
+  useEffect(() => {
+    if (!focusInvalid.current) return;
+    focusInvalid.current = false;
+    const el = formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]');
+    el?.focus();
+  }, [state.errors]);
 
   const set = useCallback((patch: Partial<WizardData>) => dispatch({ type: "set", patch }), []);
   const toggleIssue = useCallback((value: string) => dispatch({ type: "toggleIssue", value }), []);
@@ -75,8 +104,9 @@ export function ReportWizard({ geo }: { geo: WizardGeo }) {
 
   const handleNext = () => {
     const errors = validateStep(state.step, state.data, geo);
+    focusInvalid.current = Object.keys(errors).length > 0;
     dispatch({ type: "next", errors });
-    if (Object.keys(errors).length > 0) {
+    if (focusInvalid.current) {
       setLive("Some answers need attention. Please fix the highlighted fields before continuing.");
     }
   };
@@ -85,6 +115,7 @@ export function ReportWizard({ geo }: { geo: WizardGeo }) {
     const result = validatePayload(state.data, geo);
     if (!result.ok) {
       const step = earliestErrorStep(result.errors, state.step);
+      focusInvalid.current = true;
       dispatch({ type: "routeErrors", step, errors: result.errors });
       setLive("Some answers need attention. We've opened the step where they can be fixed.");
       return;
@@ -131,6 +162,7 @@ export function ReportWizard({ geo }: { geo: WizardGeo }) {
 
     if (res.fieldErrors && Object.keys(res.fieldErrors).length > 0) {
       const errors = res.fieldErrors as FieldErrors;
+      focusInvalid.current = true;
       dispatch({ type: "routeErrors", step: earliestErrorStep(errors, state.step), errors });
       setLive(res.message);
       return;
@@ -150,18 +182,17 @@ export function ReportWizard({ geo }: { geo: WizardGeo }) {
 
   return (
     <div>
-      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
-        <div className="min-w-0">
-          <h1 className="font-serif text-h1 font-bold text-ink">Share your experience</h1>
-          <p className="mt-1 text-body-lg text-ink-secondary">
-            Help improve transparency. All reports are anonymous.
-          </p>
-        </div>
-        {hydrated ? (
-          <span className="shrink-0 text-label font-medium text-ink-muted">
-            Step {state.step + 1} of {TOTAL_STEPS}
-          </span>
-        ) : null}
+      <header className="min-w-0">
+        <h1 className="font-serif text-h1 font-bold text-ink">Share your experience</h1>
+        <p className="mt-1 text-body-lg text-ink-secondary">
+          It takes about 3 minutes. We never ask for your name or contact details.
+        </p>
+      </header>
+
+      {/* One concise anonymity assurance plus the optional "What can I report?"
+          disclosure, directly below the introduction. */}
+      <div className="mt-5">
+        <TrustRail />
       </div>
 
       {hydrated ? (
@@ -176,6 +207,7 @@ export function ReportWizard({ geo }: { geo: WizardGeo }) {
         <Skeleton className="mt-6 h-96 w-full" />
       ) : (
         <form
+          ref={formRef}
           noValidate
           onSubmit={(event) => {
             event.preventDefault();
@@ -247,7 +279,7 @@ export function ReportWizard({ geo }: { geo: WizardGeo }) {
                   )
                 }
               >
-                {isLast ? "Submit report" : "Save & Continue"}
+                {isLast ? "Submit report" : "Continue"}
               </Button>
             </div>
             <Button type="button" variant="quiet" onClick={handleSaveExit}>

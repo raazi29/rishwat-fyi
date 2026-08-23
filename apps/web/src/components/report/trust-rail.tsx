@@ -2,42 +2,23 @@ import type { ReactNode } from "react";
 
 import { ActionLink } from "@/components/ui";
 import {
+  ChevronDownIcon,
   ClockIcon,
   DocumentIcon,
   HelpIcon,
   RupeeIcon,
   ShieldCheckIcon,
-  UsersIcon,
   VisitsIcon,
 } from "@/components/icons";
 
 /**
- * The left trust rail (288px on ≥1200px). Anonymity is a designed experience,
- * proven before the first field (PRODUCT.md Principle 3). Copy is verbatim from
- * the report-flow board.
+ * The report page's anonymity assurance. Formerly a persistent 288px left rail;
+ * now one concise inline block directly below the page introduction (design
+ * spec §Page hierarchy). Anonymity is still proven before the first field
+ * (PRODUCT.md Principle 3) — but once, without the duplicated "100% Anonymous"
+ * card or the unsupported "encrypted at rest" claim. "What can I report?" is an
+ * optional disclosure so it never competes with the form for attention.
  */
-
-function RailCard({
-  icon,
-  title,
-  children,
-}: {
-  icon: ReactNode;
-  title: string;
-  children: ReactNode;
-}) {
-  return (
-    <section className="rounded-lg border border-line bg-surface p-5">
-      <div className="flex items-center gap-2.5">
-        <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-tile bg-sage text-official-mid">
-          {icon}
-        </span>
-        <h2 className="font-sans text-h3 font-semibold text-ink">{title}</h2>
-      </div>
-      <div className="mt-3 space-y-2 text-label text-ink-secondary">{children}</div>
-    </section>
-  );
-}
 
 const REPORTABLE: { icon: ReactNode; label: string }[] = [
   { icon: <RupeeIcon size={18} />, label: "Extra or unofficial payments requested or paid" },
@@ -49,26 +30,35 @@ const REPORTABLE: { icon: ReactNode; label: string }[] = [
 
 export function TrustRail() {
   return (
-    <div className="space-y-5">
+    <div className="space-y-3">
       {/* Identity — a sanctioned sage "official callout" surface. */}
-      <section className="rounded-lg bg-sage p-5">
-        <div className="flex items-center gap-2.5">
-          <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-tile bg-surface text-official-mid">
-            <ShieldCheckIcon size={20} />
-          </span>
-          <h2 className="font-sans text-h3 font-semibold text-official-mid">Your identity is safe</h2>
+      <section className="flex items-start gap-3 rounded-lg bg-sage p-4">
+        <span className="mt-0.5 inline-flex size-9 shrink-0 items-center justify-center rounded-tile bg-surface text-official-mid">
+          <ShieldCheckIcon size={20} />
+        </span>
+        <div className="min-w-0">
+          <h2 className="font-sans text-body font-semibold text-official">Your identity is safe</h2>
+          <p className="mt-0.5 text-label text-official-mid">
+            We never ask for your name, phone number, Aadhaar, PAN or address — only what is needed
+            to understand the experience.
+          </p>
+          <ActionLink href="/privacy" className="mt-2">
+            Learn more about anonymity
+          </ActionLink>
         </div>
-        <div className="mt-3 space-y-2 text-label text-official-mid">
-          <p>We never ask for your name, phone number, Aadhaar, PAN or address.</p>
-          <p>We collect only what is needed to understand the experience.</p>
-        </div>
-        <ActionLink href="/privacy" className="mt-3">
-          Learn more about anonymity
-        </ActionLink>
       </section>
 
-      <RailCard icon={<DocumentIcon size={20} />} title="What can I report?">
-        <ul className="space-y-2.5">
+      {/* What can I report? — an optional native disclosure. */}
+      <details className="group rounded-lg border border-line bg-surface">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-label font-semibold text-ink [&::-webkit-details-marker]:hidden">
+          What can I report?
+          <ChevronDownIcon
+            size={18}
+            aria-hidden="true"
+            className="shrink-0 text-ink-muted transition-transform duration-150 group-open:rotate-180"
+          />
+        </summary>
+        <ul className="space-y-2.5 border-t border-line-inner px-4 py-3 text-label text-ink-secondary">
           {REPORTABLE.map((item) => (
             <li key={item.label} className="flex items-start gap-2.5">
               <span className="mt-px inline-flex size-6 shrink-0 items-center justify-center rounded-sm bg-sage text-official-mid">
@@ -78,18 +68,7 @@ export function TrustRail() {
             </li>
           ))}
         </ul>
-      </RailCard>
-
-      <RailCard icon={<UsersIcon size={20} />} title="Why report?">
-        <p>Your report helps build public data that can drive systemic change.</p>
-      </RailCard>
-
-      <RailCard icon={<HelpIcon size={20} />} title="Need help?">
-        <p>If you are facing immediate harm, contact official grievance portals.</p>
-        <ActionLink href="/about#resources" className="mt-1">
-          View resources
-        </ActionLink>
-      </RailCard>
+      </details>
     </div>
   );
 }

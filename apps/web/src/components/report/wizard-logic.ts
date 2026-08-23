@@ -109,6 +109,65 @@ export function resolveSelections(data: WizardData, geo: WizardGeo): ResolvedSel
   };
 }
 
+/**
+ * Drop selections that no longer exist in the current catalogue/geography, so a
+ * rehydrated draft can never carry a stale service, state, district, or city
+ * into validation or the payload. Runs on hydrate (before the reducer sees the
+ * draft) and is a pure, order-independent projection of `data` onto `geo`:
+ *
+ * - A department that is gone is cleared (the service list is then unfiltered).
+ * - A service that is gone is cleared; a service that still exists but whose
+ *   department no longer matches the chosen department clears the *department*
+ *   filter rather than the valid service.
+ * - A missing state clears the state, its district, and its city (cascade).
+ * - A district that does not belong to the surviving state is cleared with its
+ *   city; a city that does not belong to the surviving district is cleared.
+ *
+ * It reads only the fields it prunes, so a v1 draft missing newer fields (merged
+ * over `EMPTY_DATA` by `loadDraft`) is handled without special-casing.
+ */
+export function pruneStaleSelections(data: WizardData, geo: WizardGeo): WizardData {
+  const next: WizardData = { ...data };
+
+  if (next.departmentSlug && !geo.departments.some((d) => d.slug === next.departmentSlug)) {
+    next.departmentSlug = "";
+  }
+
+  if (next.serviceSlug) {
+    const service = geo.services.find((s) => s.slug === next.serviceSlug);
+    if (!service) {
+      next.serviceSlug = "";
+    } else if (next.departmentSlug && service.departmentSlug !== next.departmentSlug) {
+      // The service is real but no longer sits under the chosen department;
+      // keep the service and drop the (now inconsistent) department filter.
+      next.departmentSlug = "";
+    }
+  }
+
+  if (next.stateCode && !geo.states.some((s) => s.code === next.stateCode)) {
+    next.stateCode = "";
+    next.districtId = "";
+    next.cityId = "";
+  }
+
+  if (next.districtId) {
+    const districts = next.stateCode ? geo.districtsByState[next.stateCode] ?? [] : [];
+    if (!districts.some((d) => d.id === next.districtId)) {
+      next.districtId = "";
+      next.cityId = "";
+    }
+  }
+
+  if (next.cityId) {
+    const cities = next.districtId ? geo.citiesByDistrict[next.districtId] ?? [] : [];
+    if (!cities.some((c) => c.id === next.cityId)) {
+      next.cityId = "";
+    }
+  }
+
+  return next;
+}
+
 /** Build the exact `POST /reports` body. `null` if a required id is still missing. */
 export function buildPayload(data: WizardData, geo: WizardGeo): ReportSubmission | null {
   const sel = resolveSelections(data, geo);

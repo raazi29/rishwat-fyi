@@ -4,11 +4,12 @@ import { cn } from "@/lib/utils/cn";
 import { CheckIcon } from "@/components/icons";
 
 /**
- * The report wizard's 5-step indicator (DESIGN.md §Components: report wizard).
- * Reached steps are filled official green — done steps show a check, the active
- * step its number; upcoming steps are muted outlines. Horizontal with a
- * progress rail on ≥640px; a compact "Step N of M" with a progress bar on
- * phones, so the same information is restructured rather than truncated.
+ * The report wizard's progress header. The earlier five-column labelled stepper
+ * repeated each step's title and sub-label across the full width; this compact
+ * form (design spec §Page hierarchy) shows the current step title, a progress
+ * bar, and five small markers only — the same information, restructured rather
+ * than truncated, and identical at every breakpoint so nothing overflows on a
+ * phone.
  */
 
 export interface StepItem {
@@ -46,24 +47,29 @@ export function ProgressBar({
   );
 }
 
-function StepCircle({ state, number }: { state: "done" | "active" | "upcoming"; number: number }) {
+/** A single compact marker (28px) — a filled green check when done, a filled
+ * number for the active step, a muted outline for upcoming steps. Decorative:
+ * the progress bar and the visible "Step N of M" carry the semantics. */
+function StepMarker({ state, number }: { state: "done" | "active" | "upcoming"; number: number }) {
   return (
     <span
-      aria-hidden="true"
       className={cn(
-        "inline-flex size-9 shrink-0 items-center justify-center rounded-full text-label font-semibold",
+        "inline-flex size-7 shrink-0 items-center justify-center rounded-full text-label font-semibold",
         state === "upcoming"
           ? "border border-line bg-surface text-ink-muted"
           : "bg-official text-white",
+        state === "active" && "ring-2 ring-official/25",
       )}
     >
-      {state === "done" ? <CheckIcon size={18} /> : number}
+      {state === "done" ? <CheckIcon size={16} /> : number}
     </span>
   );
 }
 
 /**
- * The step indicator. `current` is the 0-based index of the active step.
+ * The compact progress header. `current` is the 0-based index of the active
+ * step. Renders the current step's title, a progress bar, and one marker per
+ * step.
  */
 export function Steps({
   steps,
@@ -78,54 +84,32 @@ export function Steps({
 }) {
   const total = steps.length;
   const active = steps[current];
-  const progress = total > 0 ? ((current + 1) / total) * 100 : 0;
+  const position = Math.min(current + 1, total);
+  const progress = total > 0 ? (position / total) * 100 : 0;
 
   return (
     <div className={className}>
-      {/* Desktop / tablet: horizontal rail + labelled steps */}
-      <div className="hidden sm:block">
-        <ProgressBar value={progress} label={ariaLabel} className="mb-5" />
-        <ol className="flex items-start">
-          {steps.map((step, index) => {
-            const state = index < current ? "done" : index === current ? "active" : "upcoming";
-            return (
-              <li
-                key={index}
-                aria-current={state === "active" ? "step" : undefined}
-                className="flex flex-1 items-start gap-3 pr-4 last:flex-none"
-              >
-                <StepCircle state={state} number={index + 1} />
-                <div className="min-w-0">
-                  <div
-                    className={cn(
-                      "text-label font-semibold",
-                      state === "upcoming" ? "text-ink-muted" : "text-ink",
-                    )}
-                  >
-                    {step.title}
-                  </div>
-                  {step.description ? (
-                    <div className="text-label text-ink-muted">{step.description}</div>
-                  ) : null}
-                </div>
-              </li>
-            );
-          })}
-        </ol>
+      <div className="mb-2.5 flex items-baseline justify-between gap-3">
+        <p className="min-w-0 truncate font-sans text-body font-semibold text-ink">
+          {active?.title ?? ""}
+        </p>
+        <p className="shrink-0 text-label font-medium text-ink-muted">
+          Step {position} of {total}
+        </p>
       </div>
 
-      {/* Phone: compact position + progress bar */}
-      <div className="sm:hidden">
-        <div className="mb-2 flex items-baseline justify-between">
-          <span className="text-label font-semibold text-ink">
-            {active?.title ?? ""}
-          </span>
-          <span className="text-label text-ink-muted">
-            Step {Math.min(current + 1, total)} of {total}
-          </span>
-        </div>
-        <ProgressBar value={progress} label={ariaLabel} />
-      </div>
+      <ProgressBar value={progress} label={ariaLabel} />
+
+      <ol aria-hidden="true" className="mt-3 flex items-center gap-2">
+        {steps.map((_, index) => {
+          const state = index < current ? "done" : index === current ? "active" : "upcoming";
+          return (
+            <li key={index}>
+              <StepMarker state={state} number={index + 1} />
+            </li>
+          );
+        })}
+      </ol>
     </div>
   );
 }
