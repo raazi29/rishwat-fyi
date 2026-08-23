@@ -50,7 +50,15 @@ export const reportSubmissionSchema = z
         d.description,
       ].some((v) => v !== undefined),
     { message: "at least one experience field is required" },
-  );
+  )
+  .refine((d) => d.paid === false || d.amount_paid_inr !== undefined || d.additional_amount_reported_inr !== undefined, {
+    message: "paid reports should include an amount (amount_paid_inr or additional_amount_reported_inr)",
+    path: ["amount_paid_inr"],
+  })
+  .refine((d) => !(d.paid === false && d.amount_paid_inr !== undefined), {
+    message: "amount_paid_inr must not be set when paid is false",
+    path: ["amount_paid_inr"],
+  });
 
 export const evidenceUploadSchema = z.object({
   report_id: uuidSchema,

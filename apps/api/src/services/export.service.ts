@@ -79,7 +79,8 @@ export async function exportRows(db: Db): Promise<ExportRow[]> {
 export function toCsv(rows: ExportRow[]): string {
   const esc = (v: unknown): string => {
     if (v === null || v === undefined) return "";
-    const s = String(v);
+    let s = String(v);
+    if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
     return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
   const lines = [EXPORT_COLUMNS.join(",")];

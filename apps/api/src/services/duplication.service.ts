@@ -48,10 +48,17 @@ export async function findDuplicateGroup(
   }
 
   // The matched report has no group yet — start one and back-fill it.
+  // Use COALESCE + RETURNING so concurrent callers racing on the same
+  // `match.id` converge on a single groupId instead of forking.
   const groupId = randomUUID();
-  await db.execute(sql`
-    update reports set duplicate_group_id = ${groupId}
-    where id = ${match.id} and duplicate_group_id is null
-  `);
-  return { isDuplicate: true, duplicateGroupId: groupId };
+  const [updated] = await execRows<{ duplicate_group_id: string }>(
+    db,
+    sql`
+      update reports
+      set duplicate_group_id = coalesce(duplicate_group_id, ${groupId})
+      where id = ${match.id}
+      returning duplicate_group_id
+    `,
+  );
+  return { isDuplicate: true, duplicateGroupId: updated?.duplicate_group_id ?? groupId };
 }

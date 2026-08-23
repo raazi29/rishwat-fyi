@@ -45,7 +45,7 @@ export function getReportStatus(
   return withSampleUnlessMissing(
     () =>
       apiFetch<ReportStatusResponse>(`/reports/${encodeURIComponent(publicId)}/status`, {
-        query: { token },
+        headers: { "x-report-token": token },
         revalidate: 0,
       }),
     () => getSampleReportStatus(publicId, token),
@@ -76,10 +76,14 @@ function isApiErrorBody(value: unknown): value is ApiErrorBody {
  * JSON-encodes bodies. Never falls back to sample. Rate-limited to 10/hour/IP.
  */
 export async function uploadEvidence(form: FormData): Promise<ApiResult<EvidenceMeta>> {
+  // Resolve the URL before the try: a misconfigured base URL (see `apiBaseUrl`)
+  // must propagate as a loud, descriptive error, not be swallowed into the
+  // generic "API could not be reached" below.
+  const url = buildUrl("/evidence");
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), EVIDENCE_UPLOAD_TIMEOUT_MS);
   try {
-    const response = await fetch(buildUrl("/evidence"), {
+    const response = await fetch(url, {
       method: "POST",
       body: form,
       signal: controller.signal,

@@ -17,18 +17,11 @@ export type ReportStatus =
  * may be re-opened to `validated` on appeal. `withdrawn` is terminal.
  */
 export const LEGAL_TRANSITIONS: Record<ReportStatus, ReportStatus[]> = {
-  submitted: [
-    "validated",
-    "corroborated",
-    "evidence_backed",
-    "officially_acknowledged",
-    "rejected",
-    "withdrawn",
-  ],
-  validated: ["corroborated", "evidence_backed", "officially_acknowledged", "rejected", "withdrawn"],
-  corroborated: ["evidence_backed", "officially_acknowledged", "rejected", "withdrawn"],
+  submitted: ["validated", "rejected", "withdrawn"],
+  validated: ["corroborated", "rejected", "withdrawn"],
+  corroborated: ["evidence_backed", "rejected", "withdrawn"],
   evidence_backed: ["officially_acknowledged", "rejected", "withdrawn"],
-  officially_acknowledged: ["rejected", "withdrawn"],
+  officially_acknowledged: ["withdrawn"],
   rejected: ["validated", "withdrawn"],
   withdrawn: [],
 };
@@ -72,11 +65,16 @@ export async function transitionReport(
     throw conflict(`Illegal status transition: ${from} -> ${toStatus}`);
   }
 
-  await db.execute(sql`
-    update reports
-    set status = ${toStatus}::report_status, status_changed_at = now(), updated_at = now()
-    where id = ${report.id}::uuid
-  `);
+  const updated = await execRows<{ id: string }>(
+    db,
+    sql`
+      update reports
+      set status = ${toStatus}::report_status, status_changed_at = now(), updated_at = now()
+      where id = ${report.id}::uuid and status = ${from}::report_status
+      returning id::text as id
+    `,
+  );
+  if (updated.length === 0) throw conflict(`Concurrent transition: report status changed from ${from}`);
 
   await db.execute(sql`
     insert into verification_events (report_id, from_status, to_status, method, moderator_id, note)

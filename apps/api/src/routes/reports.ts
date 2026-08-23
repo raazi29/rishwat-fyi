@@ -155,10 +155,11 @@ reports.post("/", strictRateLimit, async (c) => {
 
 // GET /:publicId/status — submitter-only status check. The one-time token must
 // hash to the stored digest; a mismatch returns 404 (existence is not leaked).
+// Prefer the header `x-report-token` — query param `?token=` leaks via Referer/history.
 reports.get("/:publicId/status", standardRateLimit, async (c) => {
   const idParsed = publicIdSchema.safeParse(c.req.param("publicId"));
   if (!idParsed.success) throw badRequest("Invalid report id");
-  const token = c.req.query("token") ?? c.req.header("x-report-token");
+  const token = c.req.header("x-report-token") ?? c.req.query("token");
   if (!token) throw badRequest("Missing report token");
 
   const [row] = await c
@@ -172,7 +173,11 @@ reports.get("/:publicId/status", standardRateLimit, async (c) => {
     .where(eq(reportsTable.public_id, idParsed.data))
     .limit(1);
 
-  if (!row || !row.token_hash || !hashEquals(row.token_hash, sha256Hex(token))) {
+  const tokenHash = sha256Hex(token);
+  const dummyHash = "0".repeat(64);
+  const storedHash = row?.token_hash ?? dummyHash;
+  const valid = !!row?.token_hash && hashEquals(storedHash, tokenHash);
+  if (!valid) {
     throw notFound("Report not found");
   }
   return c.json({

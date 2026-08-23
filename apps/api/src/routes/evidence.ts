@@ -5,7 +5,7 @@ import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import type { AppEnv } from "../env.js";
 import { badRequest, notFound } from "../errors.js";
-import { evidenceRateLimit } from "../middleware/rate-limit.js";
+import { evidenceRateLimit, standardRateLimit } from "../middleware/rate-limit.js";
 import { evidenceRetentionUntil } from "../services/retention.service.js";
 import { digestEquals, sha256Hex } from "../utils/hashing.js";
 
@@ -142,7 +142,9 @@ evidence.post("/", evidenceRateLimit, limitUploadBody, async (c) => {
 });
 
 // GET /:id — evidence metadata only (never the bytes or internal storage key).
-evidence.get("/:id", async (c) => {
+// No report_id: that internal UUID is not needed by public consumers and its
+// exposure enables storage-key inference (<report-uuid>/<sha256>).
+evidence.get("/:id", standardRateLimit, async (c) => {
   const idParsed = uuidSchema.safeParse(c.req.param("id"));
   if (!idParsed.success) throw badRequest("Invalid evidence id");
 
@@ -150,7 +152,6 @@ evidence.get("/:id", async (c) => {
     .get("db")
     .select({
       id: evidenceTable.id,
-      report_id: evidenceTable.report_id,
       mime_type: evidenceTable.mime_type,
       size_bytes: evidenceTable.size_bytes,
       sha256: evidenceTable.sha256,

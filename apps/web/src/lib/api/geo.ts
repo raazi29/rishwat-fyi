@@ -16,6 +16,8 @@
 
 import {
   apiFetchList,
+  SampleFallbackDisabledError,
+  sampleFallbackAllowed,
   withSample,
   withSampleUnlessMissing,
   type ApiResult,
@@ -129,12 +131,14 @@ export async function getStateGaps(): Promise<Sourced<StateGap[]>> {
   }
 
   const failure = dataset.ok ? states : dataset;
+  const error = failure.ok
+    ? { code: "invalid_response" as const, message: "The dataset export could not be read." }
+    : failure.error;
+  if (!sampleFallbackAllowed()) throw new SampleFallbackDisabledError(error);
   return {
     data: sampleStateGaps,
     source: "sample",
-    reason: failure.ok
-      ? { code: "invalid_response", message: "The dataset export could not be read." }
-      : failure.error,
+    reason: error,
   };
 }
 
@@ -207,6 +211,9 @@ export async function getStateDetail(code: string): Promise<Sourced<StateDetailV
     const state = states.data.find((entry) => entry.code === code);
     if (state === undefined) return null;
 
+    if (!dataset.ok && !sampleFallbackAllowed()) throw new SampleFallbackDisabledError(dataset.error);
+    if (!districts.ok && !sampleFallbackAllowed()) throw new SampleFallbackDisabledError(districts.error);
+
     const rows = dataset.ok ? dataset.data : [];
     const gaps = dataset.ok ? deriveStateGaps(rows, states.data) : [];
     const view: StateDetailView = {
@@ -231,6 +238,7 @@ export async function getStateDetail(code: string): Promise<Sourced<StateDetailV
   }
 
   // The catalogue itself is unreachable: fall back to the bundled sample.
+  if (!sampleFallbackAllowed()) throw new SampleFallbackDisabledError(states.error);
   const sampleState = findState(code);
   if (!sampleState) return null;
   return {

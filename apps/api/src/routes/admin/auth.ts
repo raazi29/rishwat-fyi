@@ -36,7 +36,14 @@ adminAuth.post("/login", async (c) => {
     .where(eq(users.email, email))
     .limit(1);
 
-  if (!user || !user.is_active) throw unauthorized("Invalid credentials");
+  // Timing mitigation: always run bcrypt (~60ms cost 10) even when the user
+  // does not exist, so "unknown email" vs "wrong password" cannot be
+  // distinguished by response time (see audit MEDIUM-4).
+  const DUMMY_BCRYPT_HASH = "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy";
+  if (!user || !user.is_active) {
+    await verifyPassword(password, DUMMY_BCRYPT_HASH);
+    throw unauthorized("Invalid credentials");
+  }
   const ok = await verifyPassword(password, user.password_hash);
   if (!ok) throw unauthorized("Invalid credentials");
 

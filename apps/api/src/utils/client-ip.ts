@@ -63,7 +63,13 @@ function forwardedForHop(header: string, hops: number): string | null {
     .filter((p) => p !== "");
   const index = parts.length - hops;
   if (index < 0) return null;
-  return parts[index] ?? null;
+  const candidate = parts[index];
+  if (!candidate) return null;
+  // Basic IP sanity: must look like v4 or v6. Rejects tokens like "unknown"
+  // or attacker junk that would otherwise become a distinct ip_hash bucket.
+  if (!/^(\d{1,3}\.){3}\d{1,3}$/.test(candidate) && !/^[0-9a-fA-F:]+$/.test(candidate)) return null;
+  if (parts.length > hops + 5) return null; // excessive chain → likely injection
+  return candidate;
 }
 
 /**

@@ -1,10 +1,11 @@
-import type { Db } from "@rishwat/database";
+import { createDb, type Db } from "@rishwat/database";
 import { Hono } from "hono";
+import { bodyLimit } from "hono/body-limit";
 import { cors } from "hono/cors";
 import { HTTPException } from "hono/http-exception";
 import { logger } from "hono/logger";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
-import type { AppConfig } from "./config.js";
+import { loadConfig, type AppConfig } from "./config.js";
 import type { AppEnv } from "./env.js";
 import { AppError } from "./errors.js";
 import { requireAuth, requireRole } from "./middleware/auth.js";
@@ -20,7 +21,7 @@ import { locations } from "./routes/locations.js";
 import { reports } from "./routes/reports.js";
 import { search } from "./routes/search.js";
 import { services } from "./routes/services.js";
-import type { EvidenceStorage } from "./storage/index.js";
+import { createEvidenceStorage, type EvidenceStorage } from "./storage/index.js";
 
 /**
  * Route prefixes that form the open, publicly consumable API. These — and only
@@ -60,8 +61,26 @@ function redactSecrets(text: string): string {
  * request context so routes and middleware can read them without module-level
  * globals — this also makes the app trivial to boot in tests.
  */
-export function createApp(db: Db, storage: EvidenceStorage, config: AppConfig) {
-  const app = new Hono<AppEnv>();
+export function createApp(
+  db: Db,
+  storage: EvidenceStorage,
+  config: AppConfig,
+  options: { basePath?: string } = {},
+): Hono<AppEnv> {
+  // When this app is mounted behind a fixed path prefix — e.g. the Next.js
+  // catch-all at apps/web/src/app/api/[[...route]] serves it at /api/* — every
+  // route is built on a basePath'd instance so /api/health, /api/services, …
+  // match. basePath is deliberate over wrapping in an outer
+  // `parent.route("/api", app)`: a wrapper drops THIS app's notFound handler, so
+  // unknown /api/* paths would return a plain-text 404 instead of the API's JSON
+  // error envelope (its onError is preserved either way). With no basePath this
+  // is byte-for-byte the previous behavior — routes stay at the root for
+  // `npm start`, the Docker/Railway image, the Vercel API entry, and the tests.
+  const app = (
+    options.basePath
+      ? new Hono<AppEnv>().basePath(options.basePath)
+      : new Hono<AppEnv>()
+  ) as Hono<AppEnv>;
 
   // Hono's logger prints the path INCLUDING the query string, and
   // GET /reports/:publicId/status accepts the one-time submission token as
@@ -74,6 +93,17 @@ export function createApp(db: Db, storage: EvidenceStorage, config: AppConfig) {
     c.set("storage", storage);
     c.set("config", config);
     await next();
+  });
+  // Guard JSON endpoints against 100 MiB bodies parsed before Zod max(5000) can
+  // reject — without this an unauthenticated POST with a huge JSON heap-spikes
+  // the single Node process. Evidence upload has its own 20 MiB+64k limit.
+  app.use("*", async (c, next) => {
+    if (c.req.path.startsWith("/evidence")) return next();
+    return bodyLimit({
+      maxSize: 64 * 1024,
+      onError: (c2) =>
+        c2.json({ error: { code: "bad_request", message: "Request body too large" } }, 413),
+    })(c, next);
   });
 
   // CORS is scoped, not global. The public API is meant to be openly consumable
@@ -150,3 +180,38 @@ export function createApp(db: Db, storage: EvidenceStorage, config: AppConfig) {
 }
 
 export type App = ReturnType<typeof createApp>;
+
+/**
+ * Build the fully-wired Hono app straight from environment variables: load and
+ * validate config, open the postgres.js pool, construct the evidence storage
+ * backend, then assemble the routes. This is the single entrypoint the Next.js
+ * catch-all route handler (apps/web/src/app/api/[[...route]]) mounts, so the web
+ * deployment serves the exact same API as `npm start`, the Docker/Railway
+ * container, and the standalone Vercel API entry — with no duplicated wiring.
+ *
+ * `serve()` is intentionally NOT called here: starting a listener stays solely
+ * in src/index.ts. This function only constructs the app.
+ *
+ * `loadConfig` throws on missing/invalid env (e.g. DATABASE_URL, JWT_SECRET).
+ * `createDb` is lazy — postgres.js opens no socket until the first query — so
+ * the only construction-time failure is a configuration error. Callers that
+ * must not crash at import time (the serverless route handler) should therefore
+ * call this LAZILY on the first request and translate a thrown config error
+ * into a clean 503.
+ */
+export function createAppFromEnv(
+  env: Record<string, string | undefined> = process.env,
+  options: { basePath?: string } = {},
+): {
+  app: Hono<AppEnv>;
+  db: Db;
+  client: ReturnType<typeof createDb>["client"];
+  config: AppConfig;
+  storage: EvidenceStorage;
+} {
+  const config = loadConfig(env);
+  const { db, client } = createDb(config.databaseUrl);
+  const storage = createEvidenceStorage(config.storage);
+  const app = createApp(db, storage, config, options);
+  return { app, db, client, config, storage };
+}
