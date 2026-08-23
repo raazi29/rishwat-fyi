@@ -67,7 +67,11 @@ function Ladder({ reachedIndex }: { reachedIndex: number }) {
                 )}
               />
             </div>
-            <span className="block w-full break-words px-0.5 text-center text-[0.625rem] leading-tight text-ink-muted">
+            {/* `text-micro` (the smallest step in the type scale) rather than an
+                arbitrary sub-token size: it is the design system's defined floor,
+                and `leading-tight` keeps a long two-word label like "Officially
+                acknowledged" compact under a narrow ladder node. */}
+            <span className="block w-full break-words px-0.5 text-center text-micro leading-tight text-ink-muted">
               {formatStatus(status)}
             </span>
           </li>

@@ -18,8 +18,14 @@ export interface GapRow {
   qualifier: string;
 }
 
-const SETTLE = "gap-settle 360ms var(--ease-settle) both";
-const RULE = "gap-rule 320ms var(--ease-settle) both";
+// The one authored motion moment. DESIGN.md caps it at ≤400ms *total*: the
+// seam rules draw while the three delta values settle upward on a short
+// cascade. 300ms duration + a 40ms per-row stagger finishes at 380ms for the
+// last row (was 360ms + 80ms stagger = 520ms, over budget). The smaller stagger
+// also shrinks the brief invisible window left by the `both` fill under
+// prefers-reduced-motion, where the global reset zeroes duration but not delay.
+const SETTLE = "gap-settle 300ms var(--ease-settle) both";
+const RULE = "gap-rule 300ms var(--ease-settle) both";
 
 export function GapPanel({
   amount,
@@ -71,7 +77,7 @@ export function GapPanel({
 
       <div className="mt-5 flex flex-col gap-4">
         {rows.map((row, index) => (
-          <div key={row.label} style={{ animation: SETTLE, animationDelay: `${index * 80}ms` }}>
+          <div key={row.label} style={{ animation: SETTLE, animationDelay: `${index * 40}ms` }}>
             <DeltaFigure icon={row.icon} label={row.label} value={row.value} qualifier={row.qualifier} />
           </div>
         ))}

@@ -83,6 +83,7 @@ function buildSpec(baseUrl: string): Record<string, unknown> {
         },
       },
       "/locations/states": op("get", "List all states", "locations"),
+      "/locations/tree": op("get", "Complete state, district and city hierarchy", "locations"),
       "/locations/states/{code}/districts": op("get", "Districts within a state", "locations"),
       "/locations/districts/{districtId}/cities": op("get", "Cities within a district", "locations"),
       "/locations/districts/{districtId}/offices": op(

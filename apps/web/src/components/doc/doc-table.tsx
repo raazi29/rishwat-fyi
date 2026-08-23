@@ -62,7 +62,7 @@ export function DocTable({
                 <td
                   key={column.key}
                   className={cn(
-                    "px-4 py-3 text-body text-ink-secondary",
+                    "break-words px-4 py-3 text-body text-ink-secondary",
                     column.align === "right" && "tabular text-right",
                   )}
                 >
@@ -79,7 +79,7 @@ export function DocTable({
         {rows.map((row, rowIndex) => (
           <li key={rowIndex} className="p-4">
             {primaryCol ? (
-              <p className="text-body font-medium text-ink">{row[primaryCol.key]}</p>
+              <p className="break-words text-body font-medium text-ink">{row[primaryCol.key]}</p>
             ) : null}
             <dl className="mt-2 space-y-1.5">
               {columns
@@ -87,7 +87,7 @@ export function DocTable({
                 .map((column) => (
                   <div key={column.key} className="flex justify-between gap-4">
                     <dt className="shrink-0 text-label text-ink-muted">{column.header}</dt>
-                    <dd className="text-right text-label text-ink-secondary">{row[column.key]}</dd>
+                    <dd className="min-w-0 break-words text-right text-label text-ink-secondary">{row[column.key]}</dd>
                   </div>
                 ))}
             </dl>

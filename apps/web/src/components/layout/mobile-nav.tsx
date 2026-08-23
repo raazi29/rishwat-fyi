@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils/cn";
 import { ChevronDownIcon, CloseIcon, MenuIcon } from "@/components/icons";
 import { ButtonLink } from "@/components/ui/button";
+import { BrandLogo } from "@/components/layout/brand-logo";
 import { NAV_ITEMS } from "@/components/layout/site-nav";
 import { useLockedBody } from "@/lib/hooks/use-locked-body";
 import { useOnClickOutside } from "@/lib/hooks/use-on-click-outside";
@@ -53,9 +54,7 @@ export function MobileNav({ className }: { className?: string }) {
             className="absolute right-0 top-0 flex h-full w-[86%] max-w-sm flex-col bg-paper shadow-overlay"
           >
             <div className="flex h-16 shrink-0 items-center justify-between border-b border-line px-4">
-              <span className="font-serif text-h3 font-bold tracking-tight text-official">
-                Rishwat.fyi
-              </span>
+              <BrandLogo href={null} size="sm" />
               <button
                 type="button"
                 aria-label="Close menu"

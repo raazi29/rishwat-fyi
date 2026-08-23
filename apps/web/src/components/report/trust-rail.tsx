@@ -56,7 +56,7 @@ export function TrustRail() {
           <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-tile bg-surface text-official-mid">
             <ShieldCheckIcon size={20} />
           </span>
-          <h2 className="font-sans text-h3 font-semibold text-official">Your identity is safe</h2>
+          <h2 className="font-sans text-h3 font-semibold text-official-mid">Your identity is safe</h2>
         </div>
         <div className="mt-3 space-y-2 text-label text-official-mid">
           <p>We never ask for your name, phone number, Aadhaar, PAN or address.</p>

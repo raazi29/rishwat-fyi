@@ -1,5 +1,5 @@
 import type { Db } from "@rishwat/database";
-import { sql, type SQL } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { execRows, PUBLISHABLE_STATUSES } from "../utils/sql.js";
 
 export interface CitizenBlock {

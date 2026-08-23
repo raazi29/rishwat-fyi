@@ -24,12 +24,27 @@ function stateHref(code: string): string {
 }
 
 export function StateTable({ rows }: { rows: readonly StateGap[] }) {
+  // Priority-2 honesty: when the dataset carries no qualifying reports, every
+  // "Median additional amount" cell is null and the table reads as a column of
+  // dashes. Name the reason once above the table (mirroring the StateGapList
+  // leading line) so the dashes read as "below threshold", never as zero or a
+  // broken table. Only shown in that all-null state; hidden the moment any
+  // state has a published figure.
+  const allUnpublished =
+    rows.length > 0 && rows.every((state) => parseInr(state.additional_amount_median) === null);
   return (
-    <TableShell
-      ariaLabel="States ranked by citizen-reported gap"
-      caption="Each state's report count, median additional amount reported, services covered and districts covered."
-      cards={<StateCards rows={rows} />}
-    >
+    <>
+      {allUnpublished ? (
+        <p className="mb-4 text-label text-ink-muted">
+          No state has reached the publishing threshold yet, so the median additional amount is not
+          shown for any state below.
+        </p>
+      ) : null}
+      <TableShell
+        ariaLabel="States ranked by citizen-reported gap"
+        caption="Each state's report count, median additional amount reported, services covered and districts covered."
+        cards={<StateCards rows={rows} />}
+      >
       <THead>
         <tr>
           <Th scope="col">State</Th>
@@ -80,7 +95,8 @@ export function StateTable({ rows }: { rows: readonly StateGap[] }) {
           );
         })}
       </tbody>
-    </TableShell>
+      </TableShell>
+    </>
   );
 }
 

@@ -79,6 +79,8 @@ export function resolvePeriod(key: PeriodKey, now: Date = new Date()): { start: 
 
 export interface ResolvedSelections {
   serviceId: string | null;
+  /** Public slug — the identifier `POST /reports` actually resolves against. */
+  serviceSlug: string | null;
   serviceName: string | null;
   stateId: string | null;
   stateName: string | null;
@@ -97,6 +99,7 @@ export function resolveSelections(data: WizardData, geo: WizardGeo): ResolvedSel
   const city = cities.find((c) => c.id === data.cityId) ?? null;
   return {
     serviceId: service?.id ?? null,
+    serviceSlug: service?.slug ?? null,
     serviceName: service?.name ?? null,
     stateId: state?.id ?? null,
     stateName: state?.name ?? null,
@@ -109,11 +112,18 @@ export function resolveSelections(data: WizardData, geo: WizardGeo): ResolvedSel
 /** Build the exact `POST /reports` body. `null` if a required id is still missing. */
 export function buildPayload(data: WizardData, geo: WizardGeo): ReportSubmission | null {
   const sel = resolveSelections(data, geo);
-  if (!sel.serviceId || !sel.stateId || !sel.districtId || data.period === "") return null;
+  // The service is identified by slug, never by the catalogue's local id: the
+  // wizard's ServiceOption.id is a slug-derived placeholder that is stable
+  // across online/offline rendering but is NOT the database uuid, so sending it
+  // as `service_id` would fail the API's foreign-key check on every submission.
+  // `POST /reports` accepts exactly one of service_id / service_slug and
+  // resolves the slug server-side.
+  const serviceSlug = sel.serviceSlug;
+  if (!serviceSlug || !sel.stateId || !sel.districtId || data.period === "") return null;
   const { start, end } = resolvePeriod(data.period);
 
   const payload: ReportSubmission = {
-    service_id: sel.serviceId,
+    service_slug: serviceSlug,
     state_id: sel.stateId,
     district_id: sel.districtId,
     period_start: start,

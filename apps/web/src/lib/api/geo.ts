@@ -22,7 +22,14 @@ import {
   type Sourced,
 } from "./client";
 import { deriveStateGaps, deriveStateServices, type DatasetRow } from "./dataset-aggregate";
-import type { CityRef, DepartmentRef, DistrictRef, StateGap, StateRef } from "./types";
+import type {
+  CityRef,
+  DepartmentRef,
+  DistrictRef,
+  LocationTreeState,
+  StateGap,
+  StateRef,
+} from "./types";
 import type { StateDetailView, StateServiceGap } from "./view-models";
 import {
   findCities,
@@ -30,6 +37,7 @@ import {
   findDistricts,
   findState,
   sampleDepartments,
+  sampleLocationTree,
   sampleStates,
 } from "@/lib/fixtures/geo";
 import { sampleServiceCitizen } from "@/lib/fixtures/aggregates";
@@ -43,6 +51,18 @@ export function listStates(): Promise<Sourced<StateRef[]>> {
   return withSample(
     () => apiFetchList<StateRef>("/locations/states", "items", { revalidate: CATALOGUE }),
     () => sampleStates,
+  );
+}
+
+/**
+ * One-request geography catalogue for the report wizard. The corresponding API
+ * endpoint performs three constant-count database queries; using it avoids the
+ * previous 36-state + 766-district HTTP fan-out on every `/report` render.
+ */
+export function listLocationTree(): Promise<Sourced<LocationTreeState[]>> {
+  return withSample(
+    () => apiFetchList<LocationTreeState>("/locations/tree", "items", { revalidate: CATALOGUE }),
+    () => sampleLocationTree,
   );
 }
 

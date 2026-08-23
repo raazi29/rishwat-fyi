@@ -1,6 +1,5 @@
-import Link from "next/link";
-
 import { ButtonLink } from "@/components/ui/button";
+import { BrandLogo } from "@/components/layout/brand-logo";
 import { Container } from "@/components/layout/container";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { SiteNav } from "@/components/layout/site-nav";
@@ -16,17 +15,11 @@ import { ThemeToggle } from "@/components/layout/theme-toggle";
 export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-paper">
-      <Container className="flex h-16 items-center justify-between gap-4">
+      <Container className="flex h-16 items-center justify-between gap-3 sm:gap-4">
         <div className="flex min-w-0 items-center gap-3">
-          <Link
-            href="/"
-            aria-label="Rishwat.fyi — home"
-            className="font-serif text-h2 font-bold leading-none tracking-tight text-official"
-          >
-            Rishwat.fyi
-          </Link>
-          <span aria-hidden="true" className="hidden h-8 w-px bg-line md:block" />
-          <span className="hidden text-micro leading-tight text-ink-muted md:block">
+          <BrandLogo />
+          <span aria-hidden="true" className="hidden h-8 w-px bg-line xl:block" />
+          <span className="hidden text-micro leading-tight text-ink-muted xl:block">
             Public data. Verified process.
             <br />
             Powered by citizens.
@@ -35,8 +28,12 @@ export function SiteHeader() {
 
         <SiteNav className="hidden lg:flex" />
 
-        <div className="flex items-center gap-2">
-          <ButtonLink href="/report" variant="primary" className="hidden sm:inline-flex">
+        <div className="flex shrink-0 items-center gap-2">
+          {/* Below `lg` the raised Report action already lives in the bottom tab
+              bar, so a second copy here only crowds the wordmark — at 640-1023px
+              the header used to run wordmark, descriptor, button, toggle and
+              hamburger into each other. */}
+          <ButtonLink href="/report" variant="primary" className="hidden lg:inline-flex">
             Report anonymously
           </ButtonLink>
           <ThemeToggle />

@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { BrandLogo } from "@/components/layout/brand-logo";
 import { Container } from "@/components/layout/container";
 import { MANDATORY_NOTICE } from "@/components/ui/callout";
 
@@ -63,9 +64,7 @@ export function SiteFooter() {
       <Container className="py-12">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.4fr_repeat(4,minmax(0,1fr))]">
           <div className="max-w-xs">
-            <span className="font-serif text-h2 font-bold leading-none tracking-tight text-official">
-              Rishwat.fyi
-            </span>
+            <BrandLogo href={null} />
             <p className="mt-3 font-serif text-body-lg text-ink">
               Government, as experienced by citizens.
             </p>

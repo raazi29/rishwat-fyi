@@ -96,7 +96,12 @@ export function SubmittedScreen({ sampleReceipt }: { sampleReceipt: ReportReceip
         <div className="rounded-lg border border-line bg-surface p-6 sm:p-8">
           <div className="text-center">
             <span className="relative mx-auto inline-flex size-16 items-center justify-center rounded-full bg-official-soft/15 text-official">
-              <span className="inline-flex size-12 items-center justify-center rounded-full bg-official-soft text-white">
+              {/* Solid `official` core, not `official-soft`: in dark mode
+                  `official-soft` lightens to ~#63a37e where white sits at only
+                  ~3:1. `official` stays a deep green in both themes (white ≥6:1)
+                  and matches the "official-green solid" idiom used by the
+                  verification ladder and status badges. */}
+              <span className="inline-flex size-12 items-center justify-center rounded-full bg-official text-white">
                 <CheckIcon size={28} />
               </span>
             </span>

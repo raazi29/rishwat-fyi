@@ -43,26 +43,19 @@ export default function GlobalError({
     <html lang="en-IN" style={fontFallbacks}>
       <body className="min-h-dvh bg-paper text-ink-secondary antialiased">
         <main className="mx-auto flex max-w-xl flex-col items-center px-4 py-16 text-center lg:py-24">
-          <span
-            aria-hidden="true"
-            className="inline-flex size-12 items-center justify-center rounded-tile bg-sand text-official-mid"
-          >
-            <svg
-              width={26}
-              height={26}
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1.5}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              focusable="false"
-            >
-              <path d="M12 4.5 21 19.5H3z" />
-              <path d="M12 10v4M12 16.8h.01" />
-            </svg>
-          </span>
-          <h1 className="mt-5 font-serif text-h1 font-bold text-ink">Something went wrong</h1>
+          {/* A plain <img>, not next/image: this boundary replaces the root
+              layout and must depend on nothing it provides. The asset is a
+              static file served regardless of the app tree. Decorative, so the
+              alt is empty; capped so it never dominates a phone screen. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/brand/illustration-offline.webp"
+            alt=""
+            width={340}
+            height={227}
+            className="h-auto w-full max-w-[340px] rounded-lg border border-line"
+          />
+          <h1 className="mt-6 font-serif text-h1 font-bold text-ink">Something went wrong</h1>
           <p className="mt-3 max-w-[52ch] text-body-lg text-ink-secondary">
             The site could not be displayed just now. The problem has been logged. You can try again,
             or reload the home page.

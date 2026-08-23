@@ -14,7 +14,13 @@
  * without shipping all 36 states × their districts.
  */
 
-import type { CityRef, DepartmentRef, DistrictRef, StateRef } from "@/lib/api/types";
+import type {
+  CityRef,
+  DepartmentRef,
+  DistrictRef,
+  LocationTreeState,
+  StateRef,
+} from "@/lib/api/types";
 import { sampleId } from "./ids";
 
 interface RawDistrict {
@@ -142,6 +148,19 @@ export const sampleCitiesByDistrict: Record<string, CityRef[]> = Object.fromEntr
     }),
   ),
 );
+
+/**
+ * Complete bundled hierarchy for the bulk `/locations/tree` fallback. Building
+ * it from the already-materialized maps keeps offline behavior identical to the
+ * old granular calls without issuing one pseudo-request per state/district.
+ */
+export const sampleLocationTree: LocationTreeState[] = sampleStates.map((state) => ({
+  ...state,
+  districts: (sampleDistrictsByState[state.code] ?? []).map((district) => ({
+    ...district,
+    cities: sampleCitiesByDistrict[district.id] ?? [],
+  })),
+}));
 
 /** Departments — verbatim from the seed (slug / name / category). */
 export const sampleDepartments: DepartmentRef[] = [

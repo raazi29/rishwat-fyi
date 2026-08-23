@@ -4,8 +4,13 @@ import type { MetadataRoute } from "next";
  * Web app manifest. The phone layout already has a bottom tab bar, so the site
  * reads as installable; this describes it honestly rather than dressing it up.
  * Only capabilities that actually exist are declared — no shortcuts to routes
- * that need a token, no screenshots that were never taken — and the icons are
- * the two that really exist (`icon.svg`, `apple-icon.tsx`).
+ * that need a token, no screenshots that were never taken.
+ *
+ * The icons are the generated brand tiles (see `public/brand/README.md`). Both
+ * purposes are declared because they are genuinely different images: `any` keeps
+ * the tile's own rounded corners, `maskable` is full-bleed official green with
+ * the mark inside the safe zone, so an Android launcher that crops to a circle
+ * never clips the R.
  */
 export default function manifest(): MetadataRoute.Manifest {
   return {
@@ -25,8 +30,14 @@ export default function manifest(): MetadataRoute.Manifest {
     background_color: "#fcfcfb",
     theme_color: "#fcfcfb",
     icons: [
-      { src: "/icon.svg", type: "image/svg+xml", sizes: "any", purpose: "any" },
-      { src: "/apple-icon", type: "image/png", sizes: "180x180", purpose: "any" },
+      { src: "/brand/icon-192.png", type: "image/png", sizes: "192x192", purpose: "any" },
+      { src: "/brand/icon-512.png", type: "image/png", sizes: "512x512", purpose: "any" },
+      {
+        src: "/brand/icon-maskable-512.png",
+        type: "image/png",
+        sizes: "512x512",
+        purpose: "maskable",
+      },
     ],
   };
 }

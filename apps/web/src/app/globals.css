@@ -42,6 +42,15 @@
   --color-ramp-4: #d9643a;
   --color-ramp-5: #b02f22;
 
+  /* Choropleth chrome. `map-nodata` must read as a filled shape against both
+     `surface` and `sunken` (a state with no published figure is still a state
+     on the map, not a hole); `map-line` separates neighbours; `map-outline`
+     draws the national silhouette so the map is legible even when no state has
+     a published figure yet. */
+  --color-map-nodata: #dfe3da;
+  --color-map-line: #ffffff;
+  --color-map-outline: #a9b0a4;
+
   --font-serif: var(--font-source-serif), Georgia, "Times New Roman", serif;
   --font-sans: var(--font-public-sans), system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: var(--font-jetbrains-mono), ui-monospace, "SFMono-Regular", monospace;
@@ -122,6 +131,19 @@
 
     --color-process: #9db4ea;
     --color-process-tint: #161c2b;
+
+    /* The gap ramp keeps its warm hues in dark (they stay legible on a dark
+       ground) but the lightest step is pulled down so step 1 does not glare
+       next to step 5, and the map chrome inverts. */
+    --color-ramp-1: #e8cf9f;
+    --color-ramp-2: #e5b46b;
+    --color-ramp-3: #dd8940;
+    --color-ramp-4: #c85833;
+    --color-ramp-5: #a72d22;
+
+    --color-map-nodata: #333d35;
+    --color-map-line: #0d110e;
+    --color-map-outline: #5b665c;
 
     --shadow-overlay: 0 8px 24px -8px rgb(0 0 0 / 0.6);
   }
@@ -210,6 +232,18 @@
 
   table {
     border-collapse: collapse;
+  }
+
+  /* `sr-only` pins an element to 1px, but an auto-layout table treats a width as
+     a *minimum* and stays as wide as its content. Every visually-hidden data
+     table (the choropleth's, each chart's) therefore sat ~400px wide and pushed
+     the document's scroll width past the viewport, which is why phones could be
+     scrolled sideways on the home, map and states pages. Fixed layout makes the
+     1px bind, and the table stays a real table for assistive tech. */
+  .sr-only table,
+  table.sr-only {
+    table-layout: fixed;
+    width: 1px;
   }
 }
 

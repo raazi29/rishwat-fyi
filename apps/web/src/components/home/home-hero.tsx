@@ -84,7 +84,12 @@ export function HomeHero({ totals }: { totals: PlatformTotals }) {
       <div className="flex flex-col gap-6">
         <h1 className="font-serif font-bold leading-none tracking-[-0.03em] text-ink text-display-sm sm:text-display-md lg:text-display">
           <span className="block">What should</span>
-          <span className="block text-official">government</span>
+          {/* `official-mid` is DESIGN.md's token for serif accent words (not
+              `official`, the wordmark/button green). The two are the same deep
+              green in light, but on the dark paper ground bare `official` falls
+              to ~3:1 while `official-mid` keeps a comfortable margin at display
+              scale. */}
+          <span className="block text-official-mid">government</span>
           <span className="block">cost you?</span>
         </h1>
 

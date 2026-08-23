@@ -22,6 +22,71 @@ locations.get("/states", async (c) => {
   return c.json({ items: rows });
 });
 
+/**
+ * GET /tree — the complete state → district → city catalogue.
+ *
+ * The report wizard needs this hierarchy locally for instant cascading selects.
+ * Loading it via the granular endpoints used to require one request per state
+ * and one per district (about 805 requests with the current India seed). That
+ * exhausted the 60/minute read limit and made `/report` — and then unrelated
+ * pages sharing the same proxy bucket — render the global error boundary.
+ *
+ * Keep this endpoint O(1): exactly three ordered queries regardless of catalogue
+ * size. Only public catalogue identifiers/names are returned; no report or
+ * submitter data is involved.
+ */
+locations.get("/tree", async (c) => {
+  const db = c.get("db");
+  const [stateRows, districtRows, cityRows] = await Promise.all([
+    db
+      .select({ id: states.id, code: states.code, name: states.name })
+      .from(states)
+      .orderBy(asc(states.name)),
+    db
+      .select({
+        id: districts.id,
+        state_id: districts.state_id,
+        code: districts.code,
+        name: districts.name,
+      })
+      .from(districts)
+      .orderBy(asc(districts.state_id), asc(districts.name)),
+    db
+      .select({ id: cities.id, district_id: cities.district_id, name: cities.name })
+      .from(cities)
+      .orderBy(asc(cities.district_id), asc(cities.name)),
+  ]);
+
+  const citiesByDistrict = new Map<string, { id: string; name: string }[]>();
+  for (const city of cityRows) {
+    const bucket = citiesByDistrict.get(city.district_id) ?? [];
+    bucket.push({ id: city.id, name: city.name });
+    citiesByDistrict.set(city.district_id, bucket);
+  }
+
+  const districtsByState = new Map<
+    string,
+    { id: string; code: string; name: string; cities: { id: string; name: string }[] }[]
+  >();
+  for (const district of districtRows) {
+    const bucket = districtsByState.get(district.state_id) ?? [];
+    bucket.push({
+      id: district.id,
+      code: district.code,
+      name: district.name,
+      cities: citiesByDistrict.get(district.id) ?? [],
+    });
+    districtsByState.set(district.state_id, bucket);
+  }
+
+  return c.json({
+    items: stateRows.map((state) => ({
+      ...state,
+      districts: districtsByState.get(state.id) ?? [],
+    })),
+  });
+});
+
 // GET /states/:code/districts — districts within a state, looked up by ISO code
 // (case-insensitive). 404 when the state code is unknown.
 locations.get("/states/:code/districts", async (c) => {

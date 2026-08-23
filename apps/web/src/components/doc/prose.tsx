@@ -14,7 +14,9 @@ export function Prose({ className, children, ...props }: HTMLAttributes<HTMLDivE
   return (
     <div
       className={cn(
-        "text-body text-ink-secondary",
+        // overflow-wrap is inherited, so breaking here lets long identifiers,
+        // API paths and URLs in code/links wrap rather than push the page wide
+        "text-body text-ink-secondary break-words",
         // Paragraph rhythm
         "[&>p]:mt-4 [&>p:first-child]:mt-0",
         // Sub-headings inside a section body

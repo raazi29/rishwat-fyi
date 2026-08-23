@@ -39,7 +39,9 @@ export function DefinitionList({
           className={cn("scroll-mt-24 p-5", index > 0 && "border-t border-line-inner")}
         >
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-2">
-            <dt className="font-mono text-body font-medium text-ink">{item.term}</dt>
+            {/* min-w-0 lets a long column name shrink in the flex row so
+                overflow-wrap can break it instead of overflowing at 360px */}
+            <dt className="min-w-0 break-words font-mono text-body font-medium text-ink">{item.term}</dt>
             {item.facts && item.facts.length > 0 ? (
               <div className="flex flex-wrap items-center gap-1.5">
                 {item.facts.map((fact) => (
@@ -54,7 +56,7 @@ export function DefinitionList({
               </div>
             ) : null}
           </div>
-          <dd className="mt-2 text-body text-ink-secondary">{item.description}</dd>
+          <dd className="mt-2 break-words text-body text-ink-secondary">{item.description}</dd>
         </div>
       ))}
     </dl>

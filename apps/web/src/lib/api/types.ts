@@ -153,6 +153,16 @@ export interface CityRef {
   name: string;
 }
 
+/** A district and its cities in `GET /locations/tree`. */
+export interface LocationTreeDistrict extends DistrictRef {
+  cities: CityRef[];
+}
+
+/** A state and its complete district/city hierarchy in `GET /locations/tree`. */
+export interface LocationTreeState extends StateRef {
+  districts: LocationTreeDistrict[];
+}
+
 export interface DepartmentRef {
   slug: string;
   name: string;

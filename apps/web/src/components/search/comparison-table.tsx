@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { ComponentType } from "react";
+import type { ComponentType, ReactNode } from "react";
 
 import type { ComparisonRow } from "@/lib/api";
 import {
@@ -12,6 +12,11 @@ import {
   THead,
   VerificationBadge,
 } from "@/components/ui";
+// The honest below-threshold marker is a shared domain primitive; reuse the
+// same component the geo comparison table uses so both tables label a missing
+// citizen figure identically (visible em dash + a screen-reader explanation)
+// instead of this table's previous bare, unlabelled "—".
+import { NotEnoughData } from "@/components/geo/not-enough-data";
 import {
   BuildingIcon,
   CompassIcon,
@@ -68,7 +73,7 @@ function locationLabel(row: ComparisonRow): string {
 }
 
 function reportedTimeline(row: ComparisonRow): string {
-  return row.published ? formatDays(row.reported.timeline_days) : "—";
+  return formatDays(row.reported.timeline_days);
 }
 
 export function ComparisonTable({ rows }: { rows: ComparisonRow[] }) {
@@ -139,18 +144,20 @@ export function ComparisonTable({ rows }: { rows: ComparisonRow[] }) {
               <NumericTd>{formatDays(row.official.timeline_days)}</NumericTd>
               <NumericTd>{row.official.documents ?? "—"}</NumericTd>
               <NumericTd tone="reported">
-                {row.published ? formatInr(row.reported.additional_amount_inr) : "—"}
+                {row.published ? formatInr(row.reported.additional_amount_inr) : <NotEnoughData />}
               </NumericTd>
-              <NumericTd tone="reported">{reportedTimeline(row)}</NumericTd>
               <NumericTd tone="reported">
-                {row.published ? formatVisits(row.reported.visits) : "—"}
+                {row.published ? reportedTimeline(row) : <NotEnoughData />}
+              </NumericTd>
+              <NumericTd tone="reported">
+                {row.published ? formatVisits(row.reported.visits) : <NotEnoughData />}
               </NumericTd>
               <NumericTd>{formatCount(row.report_count)}</NumericTd>
               <Td>
                 {row.verification ? (
                   <VerificationBadge status={row.verification} />
                 ) : (
-                  <span className="text-label text-ink-muted">Below threshold</span>
+                  <NotEnoughData variant="text" label="Below threshold" />
                 )}
               </Td>
               <RowLink href={href} label={`View ${row.name}`} />
@@ -168,7 +175,7 @@ function CardFigure({
   tone = "official",
 }: {
   label: string;
-  value: string;
+  value: ReactNode;
   tone?: "official" | "reported";
 }) {
   return (
@@ -217,13 +224,17 @@ function ComparisonCards({ rows }: { rows: ComparisonRow[] }) {
               <div className="space-y-2">
                 <CardFigure
                   label="Additional"
-                  value={row.published ? formatInr(row.reported.additional_amount_inr) : "—"}
+                  value={row.published ? formatInr(row.reported.additional_amount_inr) : <NotEnoughData />}
                   tone="reported"
                 />
-                <CardFigure label="Timeline" value={reportedTimeline(row)} tone="reported" />
+                <CardFigure
+                  label="Timeline"
+                  value={row.published ? reportedTimeline(row) : <NotEnoughData />}
+                  tone="reported"
+                />
                 <CardFigure
                   label="Visits"
-                  value={row.published ? formatVisits(row.reported.visits) : "—"}
+                  value={row.published ? formatVisits(row.reported.visits) : <NotEnoughData />}
                   tone="reported"
                 />
               </div>
@@ -233,7 +244,7 @@ function ComparisonCards({ rows }: { rows: ComparisonRow[] }) {
               {row.verification ? (
                 <VerificationBadge status={row.verification} />
               ) : (
-                <span className="text-label text-ink-muted">Below publishing threshold</span>
+                <NotEnoughData variant="text" label="Below publishing threshold" />
               )}
               <span className="text-label text-ink-muted tabular">
                 {formatCount(row.report_count)} reports

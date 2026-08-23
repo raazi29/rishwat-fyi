@@ -89,20 +89,46 @@ export function IndiaChoropleth({
     const raw = values[state.code];
     const value = typeof raw === "number" && Number.isFinite(raw) ? raw : null;
     const display = formatValue(value);
-    const fill = value === null ? "fill-sunken" : (RAMP_FILL[binOf(value, bins)] ?? "fill-sunken");
+    const fill =
+      value === null ? "fill-map-nodata" : (RAMP_FILL[binOf(value, bins)] ?? "fill-map-nodata");
     const href = hrefForState?.(state.code, state.name);
     return { state, value, display, fill, href };
   });
+
+  const withData = rows.filter((row) => row.value !== null).length;
 
   return (
     <figure className={cn("mx-auto w-full", VARIANT_MAX[variant], className)}>
       <div id={id} className="relative">
         <svg
           viewBox={INDIA_VIEWBOX}
-          className="block h-auto w-full"
+          className="block h-auto w-full overflow-visible"
           xmlns="http://www.w3.org/2000/svg"
         >
-          {rows.map(({ state, display, fill, href }) => {
+          <defs>
+            {/* A hatch, not just a tint: "no published figure" stays
+                distinguishable from the lightest ramp step at a glance, in
+                either theme, and for readers who cannot separate the two
+                greys. */}
+            <pattern
+              id={`${id}-nodata`}
+              width="6"
+              height="6"
+              patternUnits="userSpaceOnUse"
+              patternTransform="rotate(45)"
+            >
+              <rect width="6" height="6" className="fill-map-nodata" />
+              <line
+                x1="0"
+                y1="0"
+                x2="0"
+                y2="6"
+                strokeWidth="1.5"
+                className="stroke-map-outline opacity-60"
+              />
+            </pattern>
+          </defs>
+          {rows.map(({ state, value, display, fill, href }) => {
             const label = `${state.name} — ${display}`;
             const shape = (
               <path
@@ -110,10 +136,11 @@ export function IndiaChoropleth({
                 fillRule="evenodd"
                 strokeWidth={0.75}
                 vectorEffect="non-scaling-stroke"
+                {...(value === null ? { fill: `url(#${id}-nodata)` } : {})}
                 className={cn(
-                  "stroke-surface transition-[fill,stroke] duration-150",
-                  fill,
-                  "group-hover:stroke-ink group-focus-visible:stroke-ink",
+                  "stroke-map-line transition-[fill,stroke,stroke-width] duration-150",
+                  value === null ? "stroke-map-outline" : fill,
+                  "group-hover:stroke-ink group-hover:[stroke-width:1.75] group-focus-visible:stroke-ink group-focus-visible:[stroke-width:1.75]",
                 )}
               />
             );
@@ -123,7 +150,7 @@ export function IndiaChoropleth({
                   key={state.code}
                   href={href}
                   aria-label={label}
-                  className="group"
+                  className="group outline-none"
                   data-state-code={state.code}
                   data-state-name={state.name}
                   data-state-value={display}
@@ -138,7 +165,7 @@ export function IndiaChoropleth({
                 role="img"
                 aria-label={label}
                 tabIndex={0}
-                className="group"
+                className="group outline-none"
                 data-state-code={state.code}
                 data-state-name={state.name}
                 data-state-value={display}
@@ -151,25 +178,39 @@ export function IndiaChoropleth({
         {interactive ? <MapTooltip anchorId={id} /> : null}
       </div>
 
-      <table className="sr-only">
-        <caption>{caption}</caption>
-        <thead>
-          <tr>
-            <th scope="col">State</th>
-            <th scope="col">Reported gap</th>
-          </tr>
-        </thead>
-        <tbody>
-          {[...rows]
-            .sort((a, b) => a.state.name.localeCompare(b.state.name))
-            .map(({ state, display }) => (
-              <tr key={state.code}>
-                <td>{state.name}</td>
-                <td>{display}</td>
-              </tr>
-            ))}
-        </tbody>
-      </table>
+      {withData === 0 ? (
+        <figcaption className="mt-3 text-label text-ink-muted">
+          No state has enough published reports for this figure yet, so every state reads “no
+          data”. The map fills in as reports are verified.
+        </figcaption>
+      ) : null}
+
+      {/* A table, not a `<table className="sr-only">`: `width:1px` does not
+          constrain an auto-layout table, so the visually-hidden copy used to
+          stay ~400px wide and push the document's scroll width past the
+          viewport on phones. Hiding the wrapper keeps it a real table for
+          assistive tech with no layout footprint. */}
+      <div className="sr-only">
+        <table>
+          <caption>{caption}</caption>
+          <thead>
+            <tr>
+              <th scope="col">State</th>
+              <th scope="col">Reported gap</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[...rows]
+              .sort((a, b) => a.state.name.localeCompare(b.state.name))
+              .map(({ state, display }) => (
+                <tr key={state.code}>
+                  <td>{state.name}</td>
+                  <td>{display}</td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </div>
     </figure>
   );
 }

@@ -28,8 +28,11 @@ if (
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
-  // The shared zod schemas are consumed as TypeScript source, not a built dist.
-  transpilePackages: ["@rishwat/validation"],
+  // These workspace packages are consumed as TypeScript source, not a built
+  // dist. @rishwat/api is the Hono app mounted at /api/[[...route]]; it pulls in
+  // @rishwat/database (drizzle schema + createDb) and @rishwat/validation (zod
+  // schemas) as source, so all three must be transpiled by Next.
+  transpilePackages: ["@rishwat/validation", "@rishwat/database", "@rishwat/api"],
   webpack(config) {
     // `@rishwat/validation` is authored for NodeNext, so its internal imports
     // carry `.js` extensions that point at `.ts` files. Teach the bundler the

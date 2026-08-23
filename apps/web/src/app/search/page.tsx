@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 
 import { Container } from "@/components/layout/container";
 import {
@@ -9,7 +10,6 @@ import {
   ResultCount,
   SampleDataStrip,
 } from "@/components/ui";
-import { SearchIcon } from "@/components/icons";
 import {
   getComparisonRows,
   listDepartments,
@@ -133,7 +133,19 @@ export default async function SearchPage({
 
             {empty ? (
               <EmptyState
-                icon={<SearchIcon />}
+                media={
+                  // Brand illustration for the no-results hero. Decorative — the
+                  // heading and action carry the meaning — so alt is empty, and
+                  // it is capped so it never dominates a phone screen.
+                  <Image
+                    src="/brand/illustration-no-results.webp"
+                    alt=""
+                    width={960}
+                    height={640}
+                    sizes="320px"
+                    className="h-auto w-full max-w-[320px] rounded-md"
+                  />
+                }
                 title="No services matched your search"
                 description="Try a broader location, remove a filter, or browse the full service catalogue."
                 action={

@@ -34,13 +34,20 @@ export function Skeleton({ className, ...props }: HTMLAttributes<HTMLDivElement>
  */
 export function EmptyState({
   icon,
+  media,
   title,
   description,
   action,
   tone = "sage",
   className,
 }: {
-  icon: ReactNode;
+  icon?: ReactNode;
+  /**
+   * Optional illustration shown instead of the icon tile — e.g. a brand
+   * illustration for a hero empty state. Cap its width at the call site so it
+   * never dominates a phone screen.
+   */
+  media?: ReactNode;
   title: ReactNode;
   description?: ReactNode;
   action?: ReactNode;
@@ -49,7 +56,7 @@ export function EmptyState({
 }) {
   return (
     <div className={cn("flex flex-col items-center gap-3 px-6 py-12 text-center", className)}>
-      <IconTile tone={tone}>{icon}</IconTile>
+      {media ? media : <IconTile tone={tone}>{icon}</IconTile>}
       <div className="space-y-1">
         <h3 className="font-sans text-h3 font-semibold text-ink">{title}</h3>
         {description ? (

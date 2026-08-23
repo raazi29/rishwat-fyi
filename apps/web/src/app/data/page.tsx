@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 
 import { ActionLink, ButtonLink, NoticeStrip, SampleDataStrip } from "@/components/ui";
 import { DownloadIcon, EyeOffIcon } from "@/components/icons";
@@ -44,6 +45,20 @@ export default async function DataPage() {
           {index.source === "sample" ? (
             <SampleDataStrip reason={index.reason?.message} className="mt-6" />
           ) : null}
+          {/* Editorial header illustration (brand asset). Decorative — the page's
+              meaning is in the text below — so alt is empty; framed as a hairline
+              figure and capped so it never dominates a phone screen. */}
+          <div className="mt-6 overflow-hidden rounded-lg border border-line">
+            <Image
+              src="/brand/illustration-open-data.webp"
+              alt=""
+              width={1200}
+              height={800}
+              sizes="(min-width: 1024px) 640px, 100vw"
+              priority
+              className="h-auto w-full"
+            />
+          </div>
           <p className="prose-measure mt-6 font-serif text-figure-lg font-bold leading-tight text-ink">
             If transparency depends on one website staying online, it isn&rsquo;t really transparent.
           </p>

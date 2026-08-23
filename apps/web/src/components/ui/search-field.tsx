@@ -49,13 +49,18 @@ export function SearchField({
       role="search"
       aria-label="Search government services"
       className={cn(
-        "flex items-stretch rounded-full border border-line bg-surface transition-all duration-200",
+        "flex rounded-3xl border border-line bg-surface transition-all duration-200 sm:rounded-full",
         "hover:border-ink/30 hover:shadow-[0_2px_8px_-2px_rgba(0,0,0,0.08)] focus-within:border-official-mid focus-within:ring-2 focus-within:ring-official-mid",
-        isBar ? "h-[52px]" : "h-14",
+        // The two-segment bar cannot hold a query, a location and a button on a
+        // 360px screen, so below `sm` it stacks and the segments are divided by
+        // a horizontal hairline instead of a vertical one.
+        isBar
+          ? "flex-col items-stretch sm:h-[52px] sm:flex-row sm:items-stretch"
+          : "h-13 items-stretch sm:h-14",
         className,
       )}
     >
-      <div className="flex min-w-0 flex-1 items-center gap-2.5 pl-3.5 pr-2">
+      <div className="flex min-w-0 flex-1 items-center gap-2.5 py-2 pl-3.5 pr-2 sm:py-0">
         <SearchIcon size={20} className="shrink-0 text-ink-muted" />
         <input
           type="search"
@@ -64,14 +69,17 @@ export function SearchField({
           placeholder={placeholder}
           aria-label="Search services"
           autoFocus={autoFocus}
-          className="h-full w-full bg-transparent text-body text-ink placeholder:text-ink-muted focus-visible:outline-none"
+          className="h-11 w-full min-w-0 bg-transparent text-body text-ink placeholder:text-ink-muted focus-visible:outline-none sm:h-full"
         />
       </div>
 
       {isBar ? (
         <>
-          <div aria-hidden="true" className="my-2.5 w-px shrink-0 bg-line" />
-          <div className="flex min-w-0 flex-1 items-center gap-2.5 px-3.5">
+          <div
+            aria-hidden="true"
+            className="mx-3.5 h-px shrink-0 bg-line sm:mx-0 sm:my-2.5 sm:h-auto sm:w-px"
+          />
+          <div className="flex min-w-0 flex-1 items-center gap-2.5 px-3.5 py-2 sm:py-0">
             <MapPinIcon size={20} className="shrink-0 text-ink-muted" />
             <input
               type="text"
@@ -79,7 +87,7 @@ export function SearchField({
               defaultValue={defaultLocation}
               placeholder={locationPlaceholder}
               aria-label="Location"
-              className="h-full w-full bg-transparent text-body text-ink placeholder:text-ink-muted focus-visible:outline-none"
+              className="h-11 w-full min-w-0 bg-transparent text-body text-ink placeholder:text-ink-muted focus-visible:outline-none sm:h-full"
             />
           </div>
         </>
@@ -88,9 +96,11 @@ export function SearchField({
       <button
         type="submit"
         className={cn(
-          "inline-flex shrink-0 items-center justify-center rounded-full bg-ink font-semibold text-white",
+          // `text-paper` rather than `text-white`: `ink` is a near-white in dark
+          // mode, where a white label would vanish.
+          "inline-flex min-h-11 shrink-0 items-center justify-center rounded-full bg-ink font-semibold text-paper",
           "m-1.5 transition-all duration-200 ease-out hover:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.25)] hover:scale-[1.02] active:scale-[0.98]",
-          isBar ? "px-5 text-label" : "px-6 text-body",
+          isBar ? "px-5 text-label" : "px-5 text-label sm:px-6 sm:text-body",
         )}
       >
         {buttonLabel}

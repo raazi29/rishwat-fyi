@@ -1,5 +1,7 @@
 import { ImageResponse } from "next/og";
 
+import { MARK_DATA_URI } from "./_brand/mark-data-uri";
+
 /**
  * The share card. Same surface as the site: paper ground, official green for
  * the institutional voice, reported red used only as a data channel — the two
@@ -58,9 +60,20 @@ export default function OpengraphImage() {
           padding: "64px 72px",
         }}
       >
-        {/* Masthead: wordmark, hairline, descriptor — the site header, flattened. */}
+        {/* Masthead: mark, wordmark, hairline, descriptor — the site header, flattened. */}
         <div style={{ display: "flex", alignItems: "center" }}>
-          <div style={{ display: "flex", fontSize: "36px", letterSpacing: "-0.8px", color: OFFICIAL }}>
+          {/* eslint-disable-next-line @next/next/no-img-element -- next/og renders
+              to a raster; next/image has no meaning inside an ImageResponse. */}
+          <img src={MARK_DATA_URI} alt="" width={56} height={56} style={{ borderRadius: "13px" }} />
+          <div
+            style={{
+              display: "flex",
+              fontSize: "36px",
+              letterSpacing: "-0.8px",
+              color: OFFICIAL,
+              marginLeft: "18px",
+            }}
+          >
             Rishwat.fyi
           </div>
           <div style={{ display: "flex", width: "1px", height: "34px", backgroundColor: LINE, margin: "0 20px" }} />
