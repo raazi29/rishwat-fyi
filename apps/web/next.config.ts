@@ -52,6 +52,18 @@ const nextConfig: NextConfig = {
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           { key: "X-Frame-Options", value: "DENY" },
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+          // Vercel already sends HSTS for its own domains and for custom
+          // domains, so on the current host this is belt-and-braces. It is set
+          // here anyway so the guarantee travels with the code rather than with
+          // one hosting provider — a mirror served from anywhere else gets the
+          // same protection (docs/mirroring.md). `includeSubDomains` also covers
+          // api.rishwat.fyi. `preload` is deliberately omitted: submitting the
+          // domain to the browser preload list is a hard-to-reverse commitment
+          // and belongs to whoever operates the domain, not to this file.
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=63072000; includeSubDomains",
+          },
         ],
       },
     ];

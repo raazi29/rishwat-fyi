@@ -88,7 +88,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-dvh bg-paper text-ink-secondary antialiased">
         <SkipLink />
         <SiteHeader />
-        <main id="content" className="pb-20 lg:pb-0">
+        {/* Clear the fixed bottom tab bar (~56px) plus the phone's home-indicator
+            safe area, which the bar itself is padded for; removed at lg. */}
+        <main id="content" className="pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-0">
           {children}
         </main>
         <SiteFooter />

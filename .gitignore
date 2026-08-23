@@ -24,7 +24,24 @@ next-env.d.ts
 test-results/
 playwright-report/
 
+# Untracked scratch/audit artifacts — never commit. The lockfile itself IS
+# committed; these .bak copies, audit output and stray dev logs are pure scratch.
+# (Most .tmp-*.log files are already covered by *.log above; listed explicitly so
+# intent is unambiguous.)
+package-lock.json.bak
+package-lock.json.bak2
+.audit/
+audit-map-*.png
+probe-*.png
+.tmp-api.log
+.tmp-api.err.log
+.tmp-web.log
+.tmp-web.err.log
+.tmp-devweb.log
+
 
 # Internal planning (not for public repo)
 docs/superpowers/
 plan/
+
+.vercel
