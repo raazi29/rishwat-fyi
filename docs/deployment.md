@@ -37,24 +37,34 @@ server-side environment — never in `apps/web`, never in anything prefixed
 
 ## 2. API (Render)
 
-Deploy as a **Docker** service built from
-[`apps/api/Dockerfile`](../apps/api/Dockerfile).
-
-### Service settings
+### Service settings (Node runtime — what the primary instance runs)
 
 | Setting | Value |
 | --- | --- |
-| Runtime | Docker |
-| Dockerfile path | `apps/api/Dockerfile` |
-| Docker build context | `.` (the **repository root**) |
+| Runtime | Node |
+| Build command | `npm ci` |
+| Start command | `npx tsx apps/api/src/index.ts` |
 | Health check path | `/health` |
+| Node version | from [`.nvmrc`](../.nvmrc) — Render reads it automatically |
 | Instances | **1** — see the replica warning below |
 
-The build context must be the repository root, not `apps/api`. This is an npm
-workspaces monorepo: the API imports `@rishwat/database` and
-`@rishwat/validation`, which npm resolves by path from the root `package.json`,
-so the image has to reproduce the `apps/` + `packages/` layout. The Dockerfile's
-`CMD` is the start command — leave Render's start command blank.
+Install from the **repository root**, not `apps/api`. This is an npm workspaces
+monorepo: the API imports `@rishwat/database` and `@rishwat/validation`, which
+npm resolves by path from the root `package.json`. A root `npm ci` is what
+creates those workspace links.
+
+The entrypoint is TypeScript executed by `tsx` — there is no build step. `tsx` is
+a devDependency of `apps/api`, so the build command must **not** use
+`--omit=dev`.
+
+### Alternative: Docker runtime
+
+[`apps/api/Dockerfile`](../apps/api/Dockerfile) is maintained and CI-tested, and
+works on Render too: runtime Docker, Dockerfile path `apps/api/Dockerfile`, build
+context `.` (the repository root, for the same workspace reason), and a **blank
+start command** — the image's exec-form `CMD` is the entrypoint, and keeping it
+that way is what lets `SIGTERM` reach the graceful-shutdown handler rather than
+being swallowed by a shell wrapper.
 
 `GET /health` reports database and storage reachability and returns `503` when
 the database is down, which takes a broken instance out of rotation.

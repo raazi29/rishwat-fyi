@@ -15,7 +15,7 @@
  */
 
 import {
-  apiFetch,
+  apiFetchList,
   withSample,
   withSampleUnlessMissing,
   type ApiResult,
@@ -41,7 +41,7 @@ const AGGREGATE = 120;
 
 export function listStates(): Promise<Sourced<StateRef[]>> {
   return withSample(
-    () => apiFetch<StateRef[]>("/locations/states", { revalidate: CATALOGUE }),
+    () => apiFetchList<StateRef>("/locations/states", "items", { revalidate: CATALOGUE }),
     () => sampleStates,
   );
 }
@@ -49,8 +49,9 @@ export function listStates(): Promise<Sourced<StateRef[]>> {
 export function listDistricts(stateCode: string): Promise<Sourced<DistrictRef[]>> {
   return withSample(
     () =>
-      apiFetch<DistrictRef[]>(
+      apiFetchList<DistrictRef>(
         `/locations/states/${encodeURIComponent(stateCode)}/districts`,
+        "items",
         { revalidate: CATALOGUE },
       ),
     () => findDistricts(stateCode),
@@ -60,8 +61,9 @@ export function listDistricts(stateCode: string): Promise<Sourced<DistrictRef[]>
 export function listCities(districtId: string): Promise<Sourced<CityRef[]>> {
   return withSample(
     () =>
-      apiFetch<CityRef[]>(
+      apiFetchList<CityRef>(
         `/locations/districts/${encodeURIComponent(districtId)}/cities`,
+        "items",
         { revalidate: CATALOGUE },
       ),
     () => findCities(districtId),
@@ -70,7 +72,7 @@ export function listCities(districtId: string): Promise<Sourced<CityRef[]>> {
 
 export function listDepartments(): Promise<Sourced<DepartmentRef[]>> {
   return withSample(
-    () => apiFetch<DepartmentRef[]>("/locations/departments", { revalidate: CATALOGUE }),
+    () => apiFetchList<DepartmentRef>("/locations/departments", "items", { revalidate: CATALOGUE }),
     () => sampleDepartments,
   );
 }
@@ -79,7 +81,7 @@ export function listDepartments(): Promise<Sourced<DepartmentRef[]>> {
 export function getDepartment(slug: string): Promise<Sourced<DepartmentRef> | null> {
   return withSampleUnlessMissing(
     async (): Promise<ApiResult<DepartmentRef>> => {
-      const result = await apiFetch<DepartmentRef[]>("/locations/departments", {
+      const result = await apiFetchList<DepartmentRef>("/locations/departments", "items", {
         revalidate: CATALOGUE,
       });
       if (!result.ok) return result;
@@ -98,8 +100,8 @@ export function getDepartment(slug: string): Promise<Sourced<DepartmentRef> | nu
  */
 export async function getStateGaps(): Promise<Sourced<StateGap[]>> {
   const [dataset, states] = await Promise.all([
-    apiFetch<DatasetRow[]>("/datasets/reports.json", { revalidate: AGGREGATE }),
-    apiFetch<StateRef[]>("/locations/states", { revalidate: CATALOGUE }),
+    apiFetchList<DatasetRow>("/datasets/reports.json", "rows", { revalidate: AGGREGATE }),
+    apiFetchList<StateRef>("/locations/states", "items", { revalidate: CATALOGUE }),
   ]);
 
   if (dataset.ok && states.ok) {
@@ -172,11 +174,13 @@ function emptyGap(code: string, name: string): StateGap {
  */
 export async function getStateDetail(code: string): Promise<Sourced<StateDetailView> | null> {
   const [states, districts, dataset] = await Promise.all([
-    apiFetch<StateRef[]>("/locations/states", { revalidate: CATALOGUE }),
-    apiFetch<DistrictRef[]>(`/locations/states/${encodeURIComponent(code)}/districts`, {
-      revalidate: CATALOGUE,
-    }),
-    apiFetch<DatasetRow[]>("/datasets/reports.json", { revalidate: AGGREGATE }),
+    apiFetchList<StateRef>("/locations/states", "items", { revalidate: CATALOGUE }),
+    apiFetchList<DistrictRef>(
+      `/locations/states/${encodeURIComponent(code)}/districts`,
+      "items",
+      { revalidate: CATALOGUE },
+    ),
+    apiFetchList<DatasetRow>("/datasets/reports.json", "rows", { revalidate: AGGREGATE }),
   ]);
 
   if (states.ok) {

@@ -13,6 +13,7 @@
 
 import {
   apiFetch,
+  apiFetchList,
   publicApiBaseUrl,
   SampleFallbackDisabledError,
   sampleFallbackAllowed,
@@ -54,8 +55,8 @@ export async function getPlatformTotals(): Promise<Sourced<PlatformTotals>> {
       query: { per_page: 100 },
       revalidate: 300,
     }),
-    apiFetch<StateRef[]>("/locations/states", { revalidate: 300 }),
-    apiFetch<DatasetRow[]>("/datasets/reports.json", { revalidate: 120 }),
+    apiFetchList<StateRef>("/locations/states", "items", { revalidate: 300 }),
+    apiFetchList<DatasetRow>("/datasets/reports.json", "rows", { revalidate: 120 }),
   ]);
 
   if (services.ok && states.ok && dataset.ok) {

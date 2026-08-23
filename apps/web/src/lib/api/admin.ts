@@ -10,7 +10,7 @@
  * (public_id + new status + timestamp) — the minimal shape the queue needs.
  */
 
-import { apiFetch, type ApiResult } from "./client";
+import { apiFetch, apiFetchList, type ApiResult } from "./client";
 import type {
   AdminLoginResponse,
   AdminStatsOverview,
@@ -87,9 +87,9 @@ export function getStatsOverview(token: string): Promise<ApiResult<AdminStatsOve
 }
 
 export function getDuplicates(token: string): Promise<ApiResult<DuplicateGroup[]>> {
-  return apiFetch<DuplicateGroup[]>("/admin/stats/duplicates", { token, revalidate: 0 });
+  return apiFetchList<DuplicateGroup>("/admin/stats/duplicates", "groups", { token, revalidate: 0 });
 }
 
 export function getClusters(token: string): Promise<ApiResult<CoordinatedCluster[]>> {
-  return apiFetch<CoordinatedCluster[]>("/admin/stats/clusters", { token, revalidate: 0 });
+  return apiFetchList<CoordinatedCluster>("/admin/stats/clusters", "clusters", { token, revalidate: 0 });
 }

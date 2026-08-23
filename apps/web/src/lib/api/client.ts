@@ -231,6 +231,50 @@ function safeJsonParse(text: string): unknown {
 }
 
 /**
+ * Fetch a list endpoint and unwrap its envelope.
+ *
+ * The API does not answer list endpoints with a bare JSON array. It returns an
+ * object: `{ items }` for the location catalogue, `{ total, rows }` for the
+ * dataset export, `{ total, groups }` and `{ total, clusters }` for admin stats.
+ *
+ * This matters more than it looks. `apiFetch<T>` casts the parsed body to `T`
+ * without checking it, so typing one of those responses as `T[]` compiles
+ * perfectly and then fails at RUNTIME — `.find` or `.map` of undefined, thrown
+ * from inside a server component. That is not a degraded page: it escapes the
+ * `withSample` fallback entirely and renders the route's error boundary, so a
+ * shape mismatch on one endpoint takes out the whole page.
+ *
+ * Hence an explicit, validated unwrap. A bare array is accepted too, so this
+ * keeps working if an endpoint is ever changed to return one. Anything else
+ * becomes an `invalid_response` failure — an ordinary `ApiResult` the caller's
+ * `withSample` already knows how to handle.
+ */
+export async function apiFetchList<T>(
+  path: string,
+  key: string,
+  options: ApiRequestOptions = {},
+): Promise<ApiResult<T[]>> {
+  const result = await apiFetch<unknown>(path, options);
+  if (!result.ok) return result;
+
+  const body = result.data;
+  if (Array.isArray(body)) return { ok: true, data: body as T[] };
+
+  if (typeof body === "object" && body !== null) {
+    const list = (body as Record<string, unknown>)[key];
+    if (Array.isArray(list)) return { ok: true, data: list as T[] };
+  }
+
+  return {
+    ok: false,
+    error: {
+      code: "invalid_response",
+      message: `${path} did not return a list under "${key}".`,
+    },
+  };
+}
+
+/**
  * Resolve a call, substituting sample data when the API is unavailable.
  *
  * A `not_found` is not an outage — a live API answered, it simply does not
