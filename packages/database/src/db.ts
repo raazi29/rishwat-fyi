@@ -47,8 +47,8 @@ export function createDb(url: string) {
     ...(parsed?.port === SUPAVISOR_TRANSACTION_PORT ? { prepare: false } : {}),
 
     // Bound how long an unreachable database can stall a caller. /health probes
-    // Postgres and Railway allows 60s for the healthcheck; postgres.js's 30s
-    // default would burn that budget in two polls and fail an otherwise-healthy
+    // Postgres, and a platform healthcheck budget is typically ~60s; postgres.js's
+    // 30s default would burn that in two polls and fail an otherwise-healthy
     // deploy instead of reporting "degraded".
     connect_timeout: 10,
   });

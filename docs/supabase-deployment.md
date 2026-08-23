@@ -12,7 +12,7 @@ The guiding rule of the project is **parity**: local development runs the exact 
 | Schema/migrations | `npm run db:migrate` | Same migrations pushed to Supabase |
 | Evidence storage | `local-fs` (`EVIDENCE_STORAGE_DRIVER=local`) | Supabase Storage (`EVIDENCE_STORAGE_DRIVER=supabase`) |
 | Moderator auth | Postgres users + bcrypt + JWT | Same — plain Postgres schema, no Supabase Auth dependency |
-| API host | `npm run dev` | Any Node ≥ 20 host (Docker, Fly.io, Render, Railway) |
+| API host | `npm run dev` | Render (Docker). Any Node ≥ 20.6 host works — Fly.io, Railway, a plain VM |
 
 Supabase Functions are **not** required. The API is a plain Node/Hono server that connects to Supabase's managed Postgres over the connection pooler and to Supabase Storage via the service role key.
 
@@ -84,7 +84,7 @@ On your production host, set exactly the environment variables the app reads (se
 | Variable | Value in production |
 | --- | --- |
 | `DATABASE_URL` | The Supabase **pooler** connection string: `postgresql://postgres.<ref>:<PASSWORD>@aws-0-<region>.pooler.supabase.com:6543/postgres`. TLS is applied automatically for any non-local host, and port `6543` additionally disables prepared statements — Supavisor runs that port in transaction mode, where a client is rebound to a different backend between statements and server-side named statements do not survive |
-| `TRUSTED_PROXY_HOPS` | `1` behind a platform edge proxy (Railway, Render, Fly, Cloudflare). See the warning in Step 7 |
+| `TRUSTED_PROXY_HOPS` | `1` behind a platform edge proxy (Render, Fly, Railway, Cloudflare). See the warning in Step 7 |
 | `PORT` | e.g. `8787` |
 | `JWT_SECRET` | A long, random string (generate with `openssl rand -hex 32`) — must differ from dev |
 | `ADMIN_EMAIL` | Email of the initial admin (used by `create-admin`) |
@@ -133,7 +133,7 @@ docker build -f apps/api/Dockerfile -t rishwat-api .
 
 The root context is required because this is an npm-workspaces monorepo: the API imports `@rishwat/database` and `@rishwat/validation`, which npm resolves by path from the root `package.json`. The image reproduces the `apps/` and `packages/` layout for exactly that reason — flattening them (`COPY apps packages ./`) merges their contents into `/app` and breaks workspace resolution. It also keeps devDependencies, deliberately: the entrypoint is TypeScript executed by `tsx`.
 
-For Railway, [`railway.json`](../railway.json) already points at that Dockerfile and sets the healthcheck; the start command comes from the image's `CMD`. Or deploy without containers on Fly.io or Render: `npm ci`, set the Step 4 variables, and run `npm run start -w apps/api`. Point `PUBLIC_BASE_URL` at whatever public URL the platform gives you, and terminate TLS at the platform's edge.
+On Render, create a **Docker** service with Dockerfile path `apps/api/Dockerfile`, build context `.` (the repository root), health check path `/health`, and a **blank start command** — the image's exec-form `CMD` is the entrypoint, and keeping it that way is what lets `SIGTERM` reach the graceful-shutdown handler on every redeploy. [`deployment.md`](deployment.md) has the full service settings and the environment table. Point `PUBLIC_BASE_URL` at whatever public URL the platform gives you, and terminate TLS at the platform's edge.
 
 > **Set `TRUSTED_PROXY_HOPS=1`** on any of these platforms. Their edge proxies mean the TCP peer the API sees is always the proxy, so the default of `0` collapses every visitor on the internet into a single rate-limit bucket and a single `ip_hash` — which makes `count(distinct ip_hash) >= 2` unreachable, so **no aggregate is ever published**. Nothing errors; the site just never shows a corroborated figure. The API logs a warning at boot if it sees `0` in production.
 
@@ -164,7 +164,7 @@ wrong:
 | Site sample-data strip | The frontend is serving the bundled fixtures instead of live data — the API is unreachable from it |
 | `robots.txt` / `sitemap.xml` | `localhost` URLs here will get the site de-indexed |
 
-Two things the script cannot see from outside, to confirm in the Railway
+Two things the script cannot see from outside, to confirm in the Render
 dashboard: `TRUSTED_PROXY_HOPS=1`, and a replica count of exactly 1 (rate-limit
 buckets are per-process memory, so N replicas multiply every limit by N).
 

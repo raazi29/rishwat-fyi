@@ -61,7 +61,7 @@ Requires the Docker DB running and `TEST_DATABASE_URL` set (see `.env.example`).
 
 ## Deployment
 
-The web app deploys to Vercel and the API to Railway. See
+The web app deploys to Vercel and the API to Render. See
 [`docs/deployment.md`](docs/deployment.md) for the runbook, and
 [`docs/supabase-deployment.md`](docs/supabase-deployment.md) for the managed
 database — same schema and code, only the connection string and storage driver

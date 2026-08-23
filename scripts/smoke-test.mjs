@@ -375,11 +375,13 @@ if (failed.length > 0) {
 }
 
 console.log(
-  "\nNot verifiable from outside — check these in the Railway dashboard:\n" +
-    "  - TRUSTED_PROXY_HOPS must be 1. At 0 behind Railway's proxy every client\n" +
+  "\nNot verifiable from outside — check these in the Render dashboard:\n" +
+    "  - TRUSTED_PROXY_HOPS must be 1. At 0 behind Render's edge proxy every client\n" +
     "    shares one rate-limit bucket and one ip_hash, so no aggregate ever publishes.\n" +
-    "  - Replica count must stay at 1. Rate-limit buckets are per-process memory.\n" +
-    "  - The boot log should NOT contain a [config] TRUSTED_PROXY_HOPS warning.",
+    "  - Instance count must stay at 1. Rate-limit buckets are per-process memory.\n" +
+    "  - The boot log should NOT contain a [config] TRUSTED_PROXY_HOPS warning.\n" +
+    "  - On the free tier, instances sleep after inactivity and take 30-60s to wake;\n" +
+    "    the web app's 6s API timeout means a cold start renders sample data.",
 );
 
 process.exit(failed.length > 0 ? 1 : 0);

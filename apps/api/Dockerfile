@@ -59,7 +59,7 @@ RUN mkdir -p /app/data/evidence && chown -R node:node /app/data
 
 USER node
 
-# The server listens on PORT (default 8787); Railway injects its own PORT.
+# The server listens on PORT (default 8787); Render injects its own PORT.
 ENV PORT=8787
 EXPOSE 8787
 

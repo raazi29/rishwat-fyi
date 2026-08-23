@@ -101,14 +101,14 @@ jobs:
       - name: Typecheck (apps/web)
         run: npm run typecheck -w apps/web
 
-  # The Railway deployment artifact. Nothing else in this workflow exercises
+  # The Render deployment artifact. Nothing else in this workflow exercises
   # apps/api/Dockerfile, and it does NOT install the way the jobs above do: it
   # runs a *filtered* workspace install (`npm ci --workspace apps/api
   # --include-workspace-root`) whose ability to pull in @rishwat/database's
   # transitive dependencies is the whole reason that Dockerfile carries fourteen
   # lines of explanation. Without this job, every regression in it — a missing
   # COPY, a lockfile the filtered install rejects, a devDependency that turns out
-  # not to be installed — is discovered on Railway, in production.
+  # not to be installed — is discovered on Render, in production.
   api-image:
     runs-on: ubuntu-latest
     steps:

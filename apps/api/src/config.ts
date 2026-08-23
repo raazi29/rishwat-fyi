@@ -90,7 +90,7 @@ export function loadConfig(env: Env = process.env): AppConfig {
   } else if (driver === "local") {
     storage = { driver: "local", dir: env.EVIDENCE_STORAGE_DIR ?? "./data/evidence" };
     // Container filesystems are ephemeral. With the local driver on a platform
-    // like Railway, uploads return 201 and the evidence row commits, but the
+    // like Render, uploads return 201 and the evidence row commits, but the
     // bytes are destroyed on the next redeploy while the rows persist pointing
     // at nothing — and nothing catches it: /health only checks the directory is
     // writable (the image pre-creates it), and the retention purge uses

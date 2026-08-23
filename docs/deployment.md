@@ -4,8 +4,8 @@ Rishwat.fyi runs as two deployables plus a managed database:
 
 | Piece | Where | Config |
 | --- | --- | --- |
-| `apps/web` — the public site and admin UI | Vercel | [`vercel.json`](../vercel.json) |
-| `apps/api` — the Hono API | Railway | [`railway.json`](../railway.json), [`apps/api/Dockerfile`](../apps/api/Dockerfile) |
+| `apps/web` — the public site and admin UI | Vercel | [`apps/web/vercel.json`](../apps/web/vercel.json) |
+| `apps/api` — the Hono API | Render | [`apps/api/Dockerfile`](../apps/api/Dockerfile) |
 | PostgreSQL + PostGIS | Supabase | [`supabase-deployment.md`](supabase-deployment.md) |
 
 Nothing here is load-bearing for the project's independence guarantees. The
@@ -35,19 +35,33 @@ server-side environment — never in `apps/web`, never in anything prefixed
 
 ---
 
-## 2. API (Railway)
+## 2. API (Render)
 
-`railway.json` builds `apps/api/Dockerfile` with the **repository root** as the
-build context — the API depends on the `@rishwat/database` and
-`@rishwat/validation` workspaces, so the image has to reproduce the monorepo
-layout. Railway reads this automatically.
+Deploy as a **Docker** service built from
+[`apps/api/Dockerfile`](../apps/api/Dockerfile).
 
-Health checks hit `GET /health`, which reports database and storage
-reachability and returns `503` when the database is down.
+### Service settings
+
+| Setting | Value |
+| --- | --- |
+| Runtime | Docker |
+| Dockerfile path | `apps/api/Dockerfile` |
+| Docker build context | `.` (the **repository root**) |
+| Health check path | `/health` |
+| Instances | **1** — see the replica warning below |
+
+The build context must be the repository root, not `apps/api`. This is an npm
+workspaces monorepo: the API imports `@rishwat/database` and
+`@rishwat/validation`, which npm resolves by path from the root `package.json`,
+so the image has to reproduce the `apps/` + `packages/` layout. The Dockerfile's
+`CMD` is the start command — leave Render's start command blank.
+
+`GET /health` reports database and storage reachability and returns `503` when
+the database is down, which takes a broken instance out of rotation.
 
 ### Environment variables
 
-Set these in the Railway service. The authoritative list, with the full
+Set these on the Render service. The authoritative list, with the full
 explanation of each, is [`.env.example`](../.env.example).
 
 | Variable | Value in production | Notes |
@@ -59,21 +73,35 @@ explanation of each, is [`.env.example`](../.env.example).
 | `SUPABASE_URL` | Your project URL | Required when driver is `supabase` |
 | `SUPABASE_SERVICE_ROLE_KEY` | Service-role key | Required when driver is `supabase`. Secret |
 | `SUPABASE_STORAGE_BUCKET` | `evidence` | Must be a **private** bucket |
-| `TRUSTED_PROXY_HOPS` | `1` on Railway | Security-critical — see below. The API logs a warning at boot if this is `0` in production |
+| `TRUSTED_PROXY_HOPS` | `1` on Render | Security-critical — see below. The API logs a warning at boot if this is `0` in production |
 | `RATE_LIMIT_ENABLED` | `true` (or omit) | Never `false` in production |
 | `ADMIN_CORS_ORIGINS` | Usually omit | Only if the admin UI is on a different origin |
 
-`PORT` is injected by Railway; the server reads it and falls back to `8787`.
+`PORT` is injected by Render; the server reads it and falls back to `8787`. The
+server binds all interfaces, which Render requires — a localhost-bound process
+fails its health check.
 
-The start command lives in the Dockerfile's `CMD`, not in `railway.json` — a
-`startCommand` there would be re-wrapped in a shell, which is the thing the
-exec-form `CMD` exists to avoid so `SIGTERM` reaches the graceful-shutdown
-handler directly.
+Leave Render's **start command blank**. The Dockerfile's exec-form `CMD` is the
+entrypoint, and it exists in that form so `SIGTERM` reaches the graceful-shutdown
+handler directly rather than being swallowed by a shell wrapper. Render sends
+`SIGTERM` before replacing a container on every deploy.
 
-**Do not run more than one replica.** Rate-limit buckets are per-process
-in-memory state, so N replicas silently multiply every documented limit by N
+**Do not raise the instance count above 1.** Rate-limit buckets are per-process
+in-memory state, so N instances silently multiply every documented limit by N
 (3 reports/hour becomes 3N), and a redeploy resets every bucket. Scaling out
 requires moving them to a shared store first.
+
+### Free tier: cold starts
+
+Free Render instances spin down after inactivity and take 30–60s to wake. The
+web app's API timeout is 6s ([`client.ts`](../apps/web/src/lib/api/client.ts)),
+so during a cold start every request from the frontend times out and the site
+falls back to the bundled sample dataset — which looks like a broken frontend
+while the API answers fine when you curl it directly.
+
+If you stay on the free tier, either ping `/health` on a schedule to keep the
+instance warm, or accept that the first visitor after an idle period sees sample
+data. On a paid instance this does not apply.
 
 ### `TRUSTED_PROXY_HOPS` — get this right
 
@@ -100,8 +128,8 @@ on innocent users, and because every report then carries the same `ip_hash`,
 `count(distinct ip_hash) >= 2` is never satisfied and **no aggregate is ever
 published**. Nothing errors; the site simply never shows a corroborated figure.
 
-Railway terminates TLS and proxies to the container, so `1` is the usual value
-there. Verify after deploying rather than guessing: submit two reports from
+Render terminates TLS at its edge and proxies to the container, so `1` is the
+value there. Verify after deploying rather than guessing: submit two reports from
 different networks and confirm they produce different `ip_hash` values.
 
 ### After the first deploy
@@ -224,7 +252,7 @@ have been suppressed is the failure mode this project can least afford.
 
 ## Rollback
 
-Both hosts keep previous deployments — roll back from the Railway or Vercel
+Both hosts keep previous deployments — roll back from the Render or Vercel
 dashboard. Database migrations are **not** automatically reversible: review
 `packages/database/drizzle/` before applying anything destructive, and take a
 Supabase backup first.
