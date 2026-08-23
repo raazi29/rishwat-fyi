@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, type CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 
 import "./globals.css";
 
@@ -14,7 +14,10 @@ import "./globals.css";
  *
  * Tone follows `app/error.tsx`: neutral, never red — red belongs to the
  * citizen-reported data channel (DESIGN.md §Colors rule 1) — no stack trace for
- * the reader, and the digest logged for operators.
+ * the reader, and the digest logged for operators. The offline illustration
+ * only appears when the browser itself is offline; any other failure (the
+ * common case — a render or data error with a live connection) shows a plain
+ * alert glyph instead, so the artwork never misreports a connectivity issue.
  */
 export default function GlobalError({
   error,
@@ -23,10 +26,24 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const [offline, setOffline] = useState(false);
+
   useEffect(() => {
     // Surfaced to the operator's console/log pipeline, never to the reader.
     console.error("Unhandled application error", error);
   }, [error]);
+
+  useEffect(() => {
+    setOffline(!navigator.onLine);
+    const goOnline = () => setOffline(false);
+    const goOffline = () => setOffline(true);
+    window.addEventListener("online", goOnline);
+    window.addEventListener("offline", goOffline);
+    return () => {
+      window.removeEventListener("online", goOnline);
+      window.removeEventListener("offline", goOffline);
+    };
+  }, []);
 
   /**
    * The `next/font` variables are set by the root layout, which is exactly what
@@ -43,22 +60,43 @@ export default function GlobalError({
     <html lang="en-IN" style={fontFallbacks}>
       <body className="min-h-dvh bg-paper text-ink-secondary antialiased">
         <main className="mx-auto flex max-w-xl flex-col items-center px-4 py-16 text-center lg:py-24">
-          {/* A plain <img>, not next/image: this boundary replaces the root
-              layout and must depend on nothing it provides. The asset is a
-              static file served regardless of the app tree. Decorative, so the
-              alt is empty; capped so it never dominates a phone screen. */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/brand/illustration-offline.webp"
-            alt=""
-            width={340}
-            height={227}
-            className="h-auto w-full max-w-[340px] rounded-lg border border-line"
-          />
-          <h1 className="mt-6 font-serif text-h1 font-bold text-ink">Something went wrong</h1>
+          {offline ? (
+            // A plain <img>, not next/image: this boundary replaces the root
+            // layout and must depend on nothing it provides.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src="/brand/illustration-offline.webp"
+              alt=""
+              width={340}
+              height={227}
+              className="h-auto w-full max-w-[340px] rounded-lg border border-line"
+            />
+          ) : (
+            <div className="flex size-16 items-center justify-center rounded-full bg-sand text-official-mid">
+              <svg
+                width={30}
+                height={30}
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={1.5}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+                focusable="false"
+              >
+                <path d="M12 9v4M12 16.5h.01" />
+                <path d="M10.29 3.86 1.82 18a1.5 1.5 0 0 0 1.3 2.25h17.76a1.5 1.5 0 0 0 1.3-2.25L13.71 3.86a1.5 1.5 0 0 0-2.42 0Z" />
+              </svg>
+            </div>
+          )}
+          <h1 className="mt-6 font-serif text-h1 font-bold text-ink">
+            {offline ? "No internet connection" : "Something went wrong"}
+          </h1>
           <p className="mt-3 max-w-[52ch] text-body-lg text-ink-secondary">
-            The site could not be displayed just now. The problem has been logged. You can try again,
-            or reload the home page.
+            {offline
+              ? "You appear to be offline. Reconnect and try again — a previously loaded page may still work."
+              : "The site could not be displayed just now. The problem has been logged. You can try again, or reload the home page."}
           </p>
 
           {error.digest ? (
@@ -69,7 +107,7 @@ export default function GlobalError({
             <button
               type="button"
               onClick={reset}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-official px-4 text-label font-medium text-white transition-colors duration-150 hover:bg-official-deep"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-official px-4 text-label font-medium text-white transition-colors duration-150 hover:bg-official-deep"
             >
               <svg
                 width={18}
@@ -94,7 +132,7 @@ export default function GlobalError({
             {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
             <a
               href="/"
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-line bg-surface px-4 text-label font-medium text-ink transition-colors duration-150 hover:bg-sunken"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-line bg-surface px-4 text-label font-medium text-ink transition-colors duration-150 hover:bg-sunken"
             >
               <svg
                 width={18}

@@ -42,7 +42,7 @@ export function MobileNav({ className }: { className?: string }) {
         aria-expanded={open}
         onClick={() => setOpen(true)}
         className={cn(
-          "inline-flex size-11 items-center justify-center rounded-md border border-line bg-surface text-ink-secondary transition-colors duration-150 hover:bg-sunken hover:text-ink",
+          "inline-flex size-11 items-center justify-center rounded-lg border border-line bg-surface text-ink-secondary transition-colors duration-150 hover:bg-sunken hover:text-ink",
           className,
         )}
       >
@@ -66,7 +66,7 @@ export function MobileNav({ className }: { className?: string }) {
                 aria-label="Close menu"
                 data-mobile-nav-focus
                 onClick={() => setOpen(false)}
-                className="inline-flex size-11 items-center justify-center rounded-md text-ink-secondary transition-colors duration-150 hover:bg-sunken hover:text-ink"
+                className="inline-flex size-11 items-center justify-center rounded-lg text-ink-secondary transition-colors duration-150 hover:bg-sunken hover:text-ink"
               >
                 <CloseIcon size={22} />
               </button>

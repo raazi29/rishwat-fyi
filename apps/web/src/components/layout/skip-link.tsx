@@ -14,7 +14,7 @@ export function SkipLink({
   return (
     <a
       href={href}
-      className="skip-link absolute left-4 top-4 z-50 inline-flex min-h-11 items-center rounded-md bg-official px-4 py-2 text-label font-medium text-white shadow-overlay"
+      className="skip-link absolute left-4 top-4 z-50 inline-flex min-h-11 items-center rounded-xl bg-official px-4 py-2 text-label font-medium text-white shadow-overlay"
     >
       {children}
     </a>

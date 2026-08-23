@@ -13,7 +13,7 @@ export type ButtonSize = "sm" | "md" | "lg";
  * generic pill shapes, scaling, or hover lift.
  */
 const BASE =
-  "inline-flex select-none items-center justify-center gap-2 rounded-md font-semibold transition-[background-color,border-color,color,transform] duration-150 ease-out disabled:cursor-not-allowed disabled:opacity-50 disabled:transform-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50";
+  "inline-flex select-none items-center justify-center gap-2 rounded-xl font-semibold transition-[background-color,border-color,color,transform] duration-150 ease-out disabled:cursor-not-allowed disabled:opacity-50 disabled:transform-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50";
 
 const VARIANTS: Record<ButtonVariant, string> = {
   primary: "bg-official text-ink-inverse hover:bg-official-deep active:translate-y-px",
