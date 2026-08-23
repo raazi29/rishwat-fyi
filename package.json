@@ -15,8 +15,5 @@
     "smoke-test": "node scripts/smoke-test.mjs",
     "create-admin": "npm run create-admin -w apps/api"
   },
-  "dependencies": {
-    "next": "15.5.23"
-  },
   "engines": { "node": ">=20.6" }
 }

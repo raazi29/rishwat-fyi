@@ -138,15 +138,32 @@ this job is not scheduled, that promise is not kept.
 
 ## 3. Web (Vercel)
 
-`vercel.json` installs from the workspace root and builds `apps/web`. Import the
-repository into Vercel and leave the framework preset as Next.js.
+### Project settings
 
-**Leave the project's Root Directory at the repository root.** Vercel reads
-`vercel.json` from the configured Root Directory and resolves `outputDirectory`
-relative to it, so this file only applies there. Pointing the Root Directory at
-`apps/web` makes Vercel ignore it entirely and fall back to auto-detection —
-which happens to work, but means none of the settings recorded here are the ones
-in effect.
+| Setting | Value |
+| --- | --- |
+| Root Directory | `apps/web` |
+| Framework Preset | Next.js |
+| Build / Output / Install Command | **no overrides** — leave all three toggles off |
+
+The build configuration lives in [`apps/web/vercel.json`](../apps/web/vercel.json),
+committed so it cannot drift out of sync with the dashboard again.
+
+**Vercel reads `vercel.json` only from the Root Directory, and resolves
+`outputDirectory` relative to it.** Both facts have bitten this project:
+
+- A `vercel.json` at the *repository* root is never opened when Root Directory
+  is `apps/web`. Four separate commits tried to fix the build by editing a file
+  Vercel was not reading.
+- An Output Directory of `apps/web/.next` resolves to
+  `apps/web/apps/web/.next` and fails with *"The Next.js output directory
+  ... was not found"* — **after** a completely successful build. The correct
+  value is `.next`, which the Next.js preset already knows, so the override
+  should simply be off.
+
+Dashboard overrides still apply to any key `vercel.json` does not set, so a
+stale override there can break the build even with the file correct. If a build
+fails, check both.
 
 ### Environment variables
 
