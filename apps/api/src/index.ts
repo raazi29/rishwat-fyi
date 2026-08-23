@@ -73,17 +73,48 @@ async function shutdown(signal: NodeJS.Signals): Promise<void> {
 process.on("SIGINT", shutdown);
 process.on("SIGTERM", shutdown);
 
+// Transient Postgres / network errors must not kill the process. A statement
+// timeout (57014), a pooler bounce (57P01-57P03, 080xx) or an ECONNRESET is a
+// per-request failure — Hono already answered 500 for the request that hit it.
+// postgres.js can surface the same PostgresError twice (once to the awaiting
+// query, once to its internal pool bookkeeping), and without this guard the
+// second emission becomes an "unhandled rejection" that shuts the whole service
+// down. See the 2026-08-23 outage: GET /locations/states timed out (57014),
+// Hono returned 500, then the duplicate rejection killed the Render instance and
+// every SSR page rendered "Something went wrong" until Render restarted it.
+function isTransientUnhandledRejection(reason: unknown): boolean {
+  const r = reason as { code?: string; errno?: string; message?: string; name?: string } | null;
+  const code = r?.code ?? r?.errno ?? "";
+  // Postgres error codes — https://www.postgresql.org/docs/current/errcodes-appendix.html
+  // 08xxx connection, 40001 serialization, 40P01 deadlock, 57xxx operator intervention.
+  if (/^(08|40001|40P01|57P)/.test(code)) return true;
+  if (code === "57014") return true; // query_canceled / statement_timeout — the outage trigger
+  const msg = r?.message ?? "";
+  // Node / fetch / undici socket errors that surface when Supabase or the pooler
+  // drops a half-open connection.
+  if (/ECONNRESET|ECONNREFUSED|ETIMEDOUT|EPIPE|ENOTFOUND|UND_ERR_SOCKET|fetch failed/i.test(msg)) return true;
+  if (/ECONNRESET|ECONNREFUSED|ETIMEDOUT|UND_ERR_SOCKET/.test(code)) return true;
+  // postgres.js wraps some cancellations as PostgresError with name, no code.
+  if (r?.name === "PostgresError" && /statement timeout|canceling statement/i.test(msg)) return true;
+  return false;
+}
+
 // Last-resort process guards. Node 20 terminates on an unhandled rejection by
 // default, and an 'error' event on the HTTP server (EADDRINUSE, for instance) is
 // fatal too — in both cases the process would die with no log line explaining
 // why, and the container platform would just report "crashed". Log the cause
 // first, then drain properly so in-flight requests and the Postgres pool are not
 // severed mid-flight.
-//
-// Note both paths still end the process. An uncaught exception leaves the
-// runtime in an undefined state; the goal here is a diagnosable, orderly exit,
-// not carrying on.
 process.on("unhandledRejection", (reason) => {
+  if (isTransientUnhandledRejection(reason)) {
+    const e = reason as { name?: string; code?: string; message?: string };
+    console.warn("Transient unhandled rejection — continuing:", {
+      name: e?.name,
+      code: e?.code,
+      message: e?.message ?? String(reason),
+    });
+    return;
+  }
   console.error("Unhandled promise rejection — shutting down:", reason);
   void shutdown("SIGTERM");
 });

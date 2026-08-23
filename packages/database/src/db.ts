@@ -57,7 +57,7 @@ export function createDb(url: string) {
     // after an quiet stretch pays a dead-connection round-trip or an ECONNRESET;
     // with them the pool notices a dying socket before a caller does.
     idle_timeout: 60,
-    keep_alive: true,
+    keep_alive: 60,
   });
   return { db: drizzle(client, { schema }), client };
 }

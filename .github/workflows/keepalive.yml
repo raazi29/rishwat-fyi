@@ -1,0 +1,29 @@
+name: keepalive
+
+# Render free tier sleeps after ~15 min without traffic. The first request after
+# a sleep takes 30-50s — longer than the web app's API_TIMEOUT_MS (6s) — so
+# every data page renders "Something went wrong" until the instance is warm.
+# This workflow pings /health every 10 min to keep the instance from sleeping.
+# It costs nothing and doubles as a minimal uptime check. If you upgrade Render
+# to a paid instance (always-on), you can delete this file.
+#
+# The API URL is the Render host you told the web app about via API_BASE_URL.
+# Update it here if you move the API.
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Ping API health
+        run: |
+          set -e
+          echo "GET https://rishwat-fyi.onrender.com/health"
+          curl -fsS --max-time 25 https://rishwat-fyi.onrender.com/health | head -c 500
+          echo ""
+          echo "ok"
