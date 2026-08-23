@@ -39,7 +39,7 @@ function earliestErrorStep(errors: FieldErrors, fallback: number): number {
   return keys.reduce((min, key) => Math.min(min, stepForField(key)), TOTAL_STEPS);
 }
 
-export function ReportWizard({ geo }: { geo: WizardGeo }) {
+export function ReportWizard({ geo, apiAvailable = true }: { geo: WizardGeo; apiAvailable?: boolean }) {
   const router = useRouter();
   const [state, dispatch] = useReducer(wizardReducer, INITIAL_STATE);
   const [hydrated, setHydrated] = useState(false);
@@ -112,6 +112,12 @@ export function ReportWizard({ geo }: { geo: WizardGeo }) {
   };
 
   const handleSubmit = async () => {
+    if (!apiAvailable) {
+      saveDraft(state.data, state.step);
+      setLive("Live reporting is temporarily unavailable. Your draft is saved on this device.");
+      return;
+    }
+
     const result = validatePayload(state.data, geo);
     if (!result.ok) {
       const step = earliestErrorStep(result.errors, state.step);
@@ -240,6 +246,17 @@ export function ReportWizard({ geo }: { geo: WizardGeo }) {
             </div>
           </fieldset>
 
+          {!apiAvailable ? (
+            <Callout
+              tone="notice"
+              title="Live reporting is temporarily unavailable"
+              className="mt-6"
+            >
+              You can complete and save this draft on your device. Submission will be available
+              after the live service reconnects; reload this page before submitting.
+            </Callout>
+          ) : null}
+
           {state.failure ? (
             <Callout
               tone={state.failure.code === "rate_limited" ? "info" : "notice"}
@@ -269,6 +286,7 @@ export function ReportWizard({ geo }: { geo: WizardGeo }) {
               <Button
                 type="submit"
                 variant="primary"
+                disabled={isLast && !apiAvailable}
                 loading={state.submit === "submitting"}
                 loadingLabel="Submitting…"
                 iconTrailing={
@@ -279,7 +297,7 @@ export function ReportWizard({ geo }: { geo: WizardGeo }) {
                   )
                 }
               >
-                {isLast ? "Submit report" : "Continue"}
+                {isLast ? (apiAvailable ? "Submit report" : "Submit when service returns") : "Continue"}
               </Button>
             </div>
             <Button type="button" variant="quiet" onClick={handleSaveExit}>

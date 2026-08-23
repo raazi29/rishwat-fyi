@@ -67,16 +67,19 @@ export function publicApiBaseUrl(): string {
 }
 
 /**
- * The sample-data kill switch. Unset (the local-development default) means the
- * bundled fixtures may stand in for an unreachable API; `"false"` means they
- * may not.
+ * Whether a read may fall back to the bundled, visibly labelled dataset.
  *
- * NOTE: `NEXT_PUBLIC_*` values are inlined as string literals by the compiler at
- * BUILD time — in the server bundle as well as the client one. Changing this in
- * a hosting dashboard therefore has no effect until the next redeploy; it is not
- * a runtime switch, despite being read inside a function.
+ * Production always allows this safety net. The previous production setting
+ * (`NEXT_PUBLIC_ALLOW_SAMPLE_FALLBACK=false`) turned every transient Render
+ * timeout into a Server Component exception, taking whole pages down behind the
+ * global "Something went wrong" boundary. Returning `source: "sample"` is both
+ * safer and honest because every affected page already renders SampleDataStrip.
+ *
+ * Non-production environments may still set the variable to `false` when they
+ * deliberately need to exercise error boundaries.
  */
 export function sampleFallbackAllowed(): boolean {
+  if (process.env.NODE_ENV === "production") return true;
   return process.env.NEXT_PUBLIC_ALLOW_SAMPLE_FALLBACK !== "false";
 }
 

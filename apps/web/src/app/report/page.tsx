@@ -31,7 +31,7 @@ export default async function ReportPage() {
 
         {source === "sample" ? <SampleDataStrip reason={reason} className="mb-6" /> : null}
 
-        <ReportWizard geo={geo} />
+        <ReportWizard geo={geo} apiAvailable={source === "api"} />
       </div>
     </Container>
   );
