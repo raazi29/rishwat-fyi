@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { JetBrains_Mono, Public_Sans, Source_Serif_4 } from "next/font/google";
 
-import { BottomTabBar } from "@/components/layout/bottom-tab-bar";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import { SkipLink } from "@/components/layout/skip-link";
@@ -88,13 +87,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-dvh bg-paper text-ink-secondary antialiased">
         <SkipLink />
         <SiteHeader />
-        {/* Clear the fixed bottom tab bar (~56px) plus the phone's home-indicator
-            safe area, which the bar itself is padded for; removed at lg. */}
-        <main id="content" className="pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-0">
-          {children}
-        </main>
+        <main id="main">{children}</main>
         <SiteFooter />
-        <BottomTabBar />
       </body>
     </html>
   );

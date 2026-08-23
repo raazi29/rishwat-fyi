@@ -54,7 +54,7 @@ export function FiltersSheet({
 
       {open ? (
         <div className="fixed inset-0 z-50 lg:hidden">
-          <div aria-hidden="true" className="absolute inset-0 bg-ink/40" />
+          <div aria-hidden="true" className="absolute inset-0 bg-black/50" />
           <div
             ref={panelRef}
             role="dialog"

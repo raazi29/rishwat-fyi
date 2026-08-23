@@ -148,6 +148,12 @@
     --shadow-overlay: 0 8px 24px -8px rgb(0 0 0 / 0.6);
   }
 
+  /* The supplied Capitol artwork is intentionally light; pull its paper back
+     on dark ground instead of shipping a second, inconsistent illustration. */
+  :root[data-theme="dark"] .hero-capitol {
+    filter: brightness(0.78) saturate(0.82) contrast(1.06);
+  }
+
   * {
     border-color: var(--color-line);
   }
@@ -210,7 +216,7 @@
   :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
     outline: 2px solid var(--color-official-mid);
     outline-offset: 2px;
-    border-radius: 3px;
+    border-radius: var(--radius-xs);
   }
 
   ::selection {

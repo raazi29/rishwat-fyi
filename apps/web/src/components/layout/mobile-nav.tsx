@@ -16,8 +16,8 @@ import { useOnClickOutside } from "@/lib/hooks/use-on-click-outside";
  * The mobile navigation sheet (below 1024px). A hamburger opens a right-hand
  * panel — a shadowed, borderless overlay — with the Explore/Data groups as
  * native disclosures and the primary Report action pinned at the bottom. Body
- * scroll is locked while open; Escape, an outside tap, or following a link
- * closes it.
+ * scroll is locked while open; focus moves to its close control and returns to
+ * the trigger after Escape, an outside tap, or following a link.
  */
 export function MobileNav({ className }: { className?: string }) {
   const [open, setOpen] = useState(false);
@@ -27,6 +27,12 @@ export function MobileNav({ className }: { className?: string }) {
   useLockedBody(open);
   useOnClickOutside(panelRef, () => setOpen(false), open);
   useEffect(() => setOpen(false), [pathname]);
+  useEffect(() => {
+    if (!open) return;
+    const previous = document.activeElement as HTMLElement | null;
+    panelRef.current?.querySelector<HTMLElement>("[data-mobile-nav-focus]")?.focus();
+    return () => previous?.focus();
+  }, [open]);
 
   return (
     <>
@@ -45,7 +51,7 @@ export function MobileNav({ className }: { className?: string }) {
 
       {open ? (
         <div className="fixed inset-0 z-50 lg:hidden">
-          <div aria-hidden="true" className="absolute inset-0 bg-ink/40" />
+          <div aria-hidden="true" className="absolute inset-0 bg-black/50" />
           <div
             ref={panelRef}
             role="dialog"
@@ -58,6 +64,7 @@ export function MobileNav({ className }: { className?: string }) {
               <button
                 type="button"
                 aria-label="Close menu"
+                data-mobile-nav-focus
                 onClick={() => setOpen(false)}
                 className="inline-flex size-11 items-center justify-center rounded-md text-ink-secondary transition-colors duration-150 hover:bg-sunken hover:text-ink"
               >

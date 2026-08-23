@@ -7,31 +7,26 @@ export type ButtonVariant = "primary" | "secondary" | "quiet" | "ghost";
 export type ButtonSize = "sm" | "md" | "lg";
 
 /**
- * Airbnb-style button vocabulary: pill radius, semibold 600 weight, clean
- * black primary, white secondary with a fine hairline, and a gentle lift shadow
- * on hover so the surface feels touchable without being noisy at rest.
+ * The public-record control language: a compact 8px radius, a clearly official
+ * green primary action, and restrained press feedback. Cards own borders; only
+ * overlays own shadows, so controls use colour and a one-pixel press instead of
+ * generic pill shapes, scaling, or hover lift.
  */
-
 const BASE =
-  "inline-flex items-center justify-center gap-2 rounded-full font-semibold transition-all duration-200 ease-out select-none disabled:cursor-not-allowed disabled:opacity-50 aria-disabled:cursor-not-allowed aria-disabled:opacity-50";
+  "inline-flex select-none items-center justify-center gap-2 rounded-md font-semibold transition-[background-color,border-color,color,transform] duration-150 ease-out disabled:cursor-not-allowed disabled:opacity-50 disabled:transform-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50";
 
 const VARIANTS: Record<ButtonVariant, string> = {
-  // `text-paper`, not `text-white`: in dark mode `ink` is a near-white, so a
-  // white label on it is unreadable. Pairing the two theme tokens keeps the
-  // primary action legible in both themes by construction.
-  primary:
-    "bg-ink text-paper hover:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.25)] hover:scale-[1.02] active:scale-[0.98] active:shadow-none",
+  primary: "bg-official text-ink-inverse hover:bg-official-deep active:translate-y-px",
   secondary:
-    "border border-line bg-surface text-ink hover:border-ink/30 hover:shadow-[0_2px_8px_-2px_rgba(0,0,0,0.12)] active:scale-[0.98]",
+    "border border-line bg-surface text-ink hover:border-official-mid hover:bg-sunken active:translate-y-px",
   quiet:
-    "text-official-mid underline decoration-transparent decoration-[1.5px] underline-offset-4 hover:decoration-current",
-  ghost:
-    "text-ink-secondary hover:bg-ink/[0.04] hover:text-ink active:bg-ink/[0.06]",
+    "text-official-mid underline decoration-transparent decoration-[1.5px] underline-offset-4 hover:text-official-deep hover:decoration-current active:translate-y-px",
+  ghost: "text-ink-secondary hover:bg-sunken hover:text-ink active:translate-y-px",
 };
 
 const SIZES: Record<ButtonSize, string> = {
   sm: "min-h-9 px-4 text-label pointer-coarse:min-h-11",
-  md: "min-h-[44px] px-5 text-label",
+  md: "min-h-11 px-[18px] text-label",
   lg: "min-h-12 px-6 text-body",
 };
 
@@ -139,8 +134,8 @@ export function ButtonLink({
 }
 
 /**
- * The recurring "Learn more →" affordance from the reference boards: green
- * label, arrow, underline on hover only.
+ * The recurring "Learn more →" affordance from the reference boards. The
+ * visual line stays quiet; its 44px hit target works on a phone.
  */
 export function ActionLink({
   href,
@@ -150,7 +145,7 @@ export function ActionLink({
   ...props
 }: AnchorHTMLAttributes<HTMLAnchorElement> & { href: string; external?: boolean }) {
   const classes = cn(
-    "group inline-flex items-center gap-1.5 text-label font-medium text-official-mid transition-colors duration-150 hover:text-official-deep",
+    "group inline-flex min-h-11 items-center gap-1.5 text-label font-medium text-official-mid transition-colors duration-150 hover:text-official-deep",
     className,
   );
   const content = (

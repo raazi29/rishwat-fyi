@@ -5,13 +5,8 @@ import { MapPinIcon, SearchIcon } from "@/components/icons";
 
 /**
  * The search composite from the boards: a leading SearchIcon, the query input,
- * and an attached green Search button. `size="hero"` is the single wide field
- * on the home hero; `size="bar"` splits into a query segment and a location
- * segment joined by a hairline (the search-results header).
- *
- * It is a real `<form method="get">` so it works without JavaScript and never
- * fetches on the client for primary content (PRODUCT.md). The client boundary
- * only lets a parent pass default values and handlers.
+ * and an attached official-green Search button. `size="hero"` is the single
+ * wide field on the home hero; `size="bar"` splits into query and location.
  */
 export function SearchField({
   size = "hero",
@@ -49,11 +44,8 @@ export function SearchField({
       role="search"
       aria-label="Search government services"
       className={cn(
-        "flex rounded-3xl border border-line bg-surface transition-all duration-200 sm:rounded-full",
-        "hover:border-ink/30 hover:shadow-[0_2px_8px_-2px_rgba(0,0,0,0.08)] focus-within:border-official-mid focus-within:ring-2 focus-within:ring-official-mid",
-        // The two-segment bar cannot hold a query, a location and a button on a
-        // 360px screen, so below `sm` it stacks and the segments are divided by
-        // a horizontal hairline instead of a vertical one.
+        "flex rounded-md border border-line bg-surface transition-[border-color,background-color] duration-150",
+        "hover:border-official-mid focus-within:border-official-mid focus-within:ring-2 focus-within:ring-official-mid",
         isBar
           ? "flex-col items-stretch sm:h-[52px] sm:flex-row sm:items-stretch"
           : "h-13 items-stretch sm:h-14",
@@ -96,10 +88,8 @@ export function SearchField({
       <button
         type="submit"
         className={cn(
-          // `text-paper` rather than `text-white`: `ink` is a near-white in dark
-          // mode, where a white label would vanish.
-          "inline-flex min-h-11 shrink-0 items-center justify-center rounded-full bg-ink font-semibold text-paper",
-          "m-1.5 transition-all duration-200 ease-out hover:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.25)] hover:scale-[1.02] active:scale-[0.98]",
+          "m-1 inline-flex min-h-11 shrink-0 items-center justify-center rounded-md bg-official font-semibold text-ink-inverse",
+          "transition-[background-color,transform] duration-150 hover:bg-official-deep active:translate-y-px",
           isBar ? "px-5 text-label" : "px-5 text-label sm:px-6 sm:text-body",
         )}
       >

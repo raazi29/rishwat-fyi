@@ -54,7 +54,7 @@ export function GapMap({
   const isFull = variant === "full";
 
   return (
-    <section className={cn("flex flex-col", className)}>
+    <section className={cn("flex min-w-0 flex-col", className)}>
       {showHeader ? (
         <header className="mb-4">
           <h3 className="font-serif text-h3 font-bold text-ink">{title}</h3>
@@ -66,7 +66,7 @@ export function GapMap({
 
       <div
         className={cn(
-          "grid gap-6",
+          "grid min-w-0 gap-6",
           isFull
             ? "lg:grid-cols-[minmax(0,28rem)_minmax(0,1fr)] lg:items-start lg:gap-12"
             : "sm:grid-cols-[minmax(0,1fr)_14rem] sm:items-start",
@@ -78,13 +78,14 @@ export function GapMap({
           variant={variant}
           {...(id ? { id } : {})}
           caption={title}
-          className={isFull ? "mx-auto w-full max-w-md lg:mx-0" : undefined}
+          className={isFull ? "mx-auto min-w-0 w-full max-w-md lg:mx-0" : "min-w-0"}
         />
         <StateGapList
           items={items}
           limit={isFull ? 10 : 5}
           title={isFull ? "States by reported gap" : "Top 5 states by reported gap"}
           {...(viewAllHref ? { viewAllHref } : {})}
+          className="min-w-0"
         />
       </div>
     </section>

@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
@@ -20,8 +21,6 @@ import {
 import type { PlatformTotals } from "@/lib/api";
 import { formatCount } from "@/lib/utils/format";
 import { cn } from "@/lib/utils/cn";
-
-import { GovernmentBuilding } from "./government-building";
 
 const POPULAR_SEARCHES = [
   "Driving Licence",
@@ -61,7 +60,7 @@ function ActionCard({
       href={href}
       className={cn(
         "group flex items-center gap-3 rounded-lg border border-line bg-surface p-4",
-        "transition-colors duration-150 hover:bg-sunken focus-visible:bg-sunken",
+        "transition-[background-color,border-color,transform] duration-150 hover:border-official-mid hover:bg-sunken active:translate-y-px focus-visible:bg-sunken",
       )}
     >
       <IconTile tone="sand">{icon}</IconTile>
@@ -84,11 +83,6 @@ export function HomeHero({ totals }: { totals: PlatformTotals }) {
       <div className="flex flex-col gap-6">
         <h1 className="font-serif font-bold leading-none tracking-[-0.03em] text-ink text-display-sm sm:text-display-md lg:text-display">
           <span className="block">What should</span>
-          {/* `official-mid` is DESIGN.md's token for serif accent words (not
-              `official`, the wordmark/button green). The two are the same deep
-              green in light, but on the dark paper ground bare `official` falls
-              to ~3:1 while `official-mid` keeps a comfortable margin at display
-              scale. */}
           <span className="block text-official-mid">government</span>
           <span className="block">cost you?</span>
         </h1>
@@ -129,10 +123,19 @@ export function HomeHero({ totals }: { totals: PlatformTotals }) {
         </div>
       </div>
 
-      {/* Right: the illustration over the platform snapshot */}
-      <div className="flex flex-col gap-8">
-        <h2 className="sr-only">Platform snapshot</h2>
-        <GovernmentBuilding className="mx-auto w-full max-w-lg text-ink-secondary" />
+      {/* The supplied Capitol illustration establishes the civic setting before the statistics. */}
+      <div className="flex flex-col gap-6 sm:gap-8">
+        <div className="overflow-hidden rounded-lg border border-line bg-surface p-2 sm:p-3">
+          <Image
+            src="/brand/illustration-capitol.webp"
+            alt="Illustration of a neoclassical government building flying the Indian flag"
+            width={1400}
+            height={800}
+            priority
+            sizes="(max-width: 1023px) calc(100vw - 2rem), (max-width: 1440px) 45vw, 640px"
+            className="hero-capitol h-auto w-full object-contain"
+          />
+        </div>
         <Card className="p-5 sm:p-6">
           <StatStrip items={statItems(totals)} />
         </Card>

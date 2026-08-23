@@ -251,7 +251,7 @@ Tracking floor `-0.03em`, used only at display sizes. Prose measure 65–75ch; t
 - Grids in the reference, preserved: home hero `1fr 1fr` collapsing to one column at ≤1024px; search `264px` filter rail + fluid results, rail becomes a collapsible sheet at ≤1024px; service overview four panels `1.05fr 1.15fr 1fr 1.15fr` → 2×2 at ≤1200px → stacked at ≤768px; report flow `288px` trust rail + form + `264px` tips rail → form first, rails below at ≤1200px.
 - **Responsive behaviour is structural, never fluid type.** The comparison table is the sharpest case: at ≤900px each row becomes a card with a two-column official/reported block and the verification badge on its own line. Tables never scroll horizontally on phones.
 - Sticky: header always; the report wizard's step bar sticks under it; the service page tab bar sticks under it.
-- Bottom tab bar on phones (Explore · Map · Report · Data · About) as in the mobile board, with `Report` as the raised primary.
+- On phones, the header exposes the complete navigation in a focused drawer; no bottom tab bar duplicates those destinations.
 
 ## Elevation & Depth
 
@@ -263,7 +263,7 @@ Only surfaces that genuinely leave the page get a shadow, and they drop the bord
 
 Cards and panels `12px`. Buttons, inputs, selects `8px`. Badges and chips `6px`. Icon tiles `10px` at `36px` square. Step markers and avatars are circles. Fully-rounded pills are reserved for the header descriptor chip and filter chips — never for a card or a primary button. Authored line icons only: 1.5px stroke, round caps and joins, 20px or 24px box, drawn from the product's own vocabulary (document, counter, rupee, clock, footsteps, shield, scale, map pin, database). No icon library aesthetic mixing, no sketch/doodle illustration, no `feTurbulence` texture.
 
-The one illustration in the system is the institutional-building line drawing in the home hero: single-weight ink line work on paper, no fills, no gradient sky.
+The home hero uses the supplied Neoclassical Capitol illustration with the Indian flag, optimised as WebP and presented within a restrained bordered surface. It is the only large illustrative image in the system; all other imagery remains purposeful empty, offline, or data-context artwork.
 
 ## Components
 
