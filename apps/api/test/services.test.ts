@@ -29,6 +29,19 @@ describe("GET /services", () => {
     }
   });
 
+  it("preserves the total when the requested page is beyond the result set", async () => {
+    const firstPage = await app.request("/services?per_page=1");
+    expect(firstPage.status).toBe(200);
+    const firstBody = (await firstPage.json()) as { total: number };
+    expect(firstBody.total).toBeGreaterThan(0);
+
+    const beyond = await app.request("/services?page=999999&per_page=1");
+    expect(beyond.status).toBe(200);
+    const beyondBody = (await beyond.json()) as { total: number; items: unknown[] };
+    expect(beyondBody.items).toEqual([]);
+    expect(beyondBody.total).toBe(firstBody.total);
+  });
+
   it("returns full detail for driving-licence including the official fee", async () => {
     const res = await app.request("/services/driving-licence");
     expect(res.status).toBe(200);

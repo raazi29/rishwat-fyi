@@ -24,7 +24,8 @@ export interface SearchResult {
   items: SearchItem[];
 }
 
-type Row = SearchItem & { total_count: number };
+type Row = SearchItem;
+type CountRow = { total_count: number };
 
 /**
  * Search the service catalog. `q` is matched three ways (any hit qualifies):
@@ -81,21 +82,31 @@ export async function searchServices(
       ) desc, s.name asc`
     : sql`order by s.name asc`;
 
-  const rows = await execRows<Row>(
-    db,
-    sql`
-      select s.id::text as id, s.slug, s.name, d.name as department, s.description,
-        ${reportCount} as report_count,
-        (count(*) over())::int as total_count
-      from services s
-      join departments d on d.id = s.department_id
-      ${whereSql}
-      ${order}
-      limit ${perPage} offset ${offset}
-    `,
-  );
+  const [countRows, rows] = await Promise.all([
+    execRows<CountRow>(
+      db,
+      sql`
+        select count(*)::int as total_count
+        from services s
+        join departments d on d.id = s.department_id
+        ${whereSql}
+      `,
+    ),
+    execRows<Row>(
+      db,
+      sql`
+        select s.id::text as id, s.slug, s.name, d.name as department, s.description,
+          ${reportCount} as report_count
+        from services s
+        join departments d on d.id = s.department_id
+        ${whereSql}
+        ${order}
+        limit ${perPage} offset ${offset}
+      `,
+    ),
+  ]);
 
-  const total = rows.length > 0 ? (rows[0] as Row).total_count : 0;
+  const total = countRows[0]?.total_count ?? 0;
   const items = rows.map((r) => ({
     id: r.id,
     slug: r.slug,

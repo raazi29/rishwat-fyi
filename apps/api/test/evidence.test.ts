@@ -34,6 +34,9 @@ let ownerReportId: string;
 let otherPublicId: string;
 
 const reportIds: string[] = [];
+let pendingEvidenceId: string;
+let acceptedEvidenceId: string;
+let rejectedEvidenceId: string;
 
 function pngFile(): File {
   return new File([new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10])], "receipt.png", {
@@ -77,6 +80,19 @@ beforeAll(async () => {
   ownerPublicId = owner.publicId;
   ownerReportId = owner.id;
   otherPublicId = (await seedReport(OTHER_TOKEN)).publicId;
+
+  const visibilityRows = (await boot.db.execute(sql`
+    insert into evidence
+      (report_id, storage_key, mime_type, size_bytes, sha256, status, retention_until)
+    values
+      (${ownerReportId}::uuid, 'test/pending', 'image/png', 8, ${"1".repeat(64)}, 'pending_review', now() + interval '90 days'),
+      (${ownerReportId}::uuid, 'test/accepted', 'image/png', 8, ${"2".repeat(64)}, 'accepted', now() + interval '90 days'),
+      (${ownerReportId}::uuid, 'test/rejected', 'image/png', 8, ${"3".repeat(64)}, 'rejected', now() + interval '90 days')
+    returning id::text as id, status
+  `)) as unknown as { id: string; status: string }[];
+  pendingEvidenceId = visibilityRows.find((row) => row.status === "pending_review")!.id;
+  acceptedEvidenceId = visibilityRows.find((row) => row.status === "accepted")!.id;
+  rejectedEvidenceId = visibilityRows.find((row) => row.status === "rejected")!.id;
 });
 
 afterAll(async () => {
@@ -96,7 +112,9 @@ describe("POST /evidence — submitter upload", () => {
     const res = await app.request("/evidence", { method: "POST", body: form });
     expect(res.status).toBe(201);
 
-    const body = (await res.json()) as { id: string; status: string };
+    const body = (await res.json()) as { id: string; status: string; report_id?: string };
+    // Public upload receipts must not expose the internal report UUID.
+    expect(body).not.toHaveProperty("report_id");
     // Evidence always lands in moderation rather than going live immediately.
     expect(body.status).toBe("pending_review");
     expect(typeof body.id).toBe("string");
@@ -194,5 +212,39 @@ describe("POST /evidence — content rules", () => {
 
     const res = await app.request("/evidence", { method: "POST", body: form });
     expect(res.status).toBe(400);
+  });
+});
+
+
+
+describe("public evidence metadata visibility", () => {
+  it("returns accepted evidence metadata", async () => {
+    const res = await app.request(`/evidence/${acceptedEvidenceId}`);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { id: string; status: string; report_id?: string };
+    expect(body.id).toBe(acceptedEvidenceId);
+    expect(body.status).toBe("accepted");
+    expect(body).not.toHaveProperty("report_id");
+  });
+
+  it("hides pending-review evidence metadata", async () => {
+    const res = await app.request(`/evidence/${pendingEvidenceId}`);
+    expect(res.status).toBe(404);
+  });
+
+  it("hides rejected evidence metadata", async () => {
+    const res = await app.request(`/evidence/${rejectedEvidenceId}`);
+    expect(res.status).toBe(404);
+  });
+
+  it("lists only accepted evidence on a public report", async () => {
+    const res = await app.request(`/reports/${ownerPublicId}`);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      evidence: { id: string; status: string; report_id?: string }[];
+    };
+    expect(body.evidence.map((entry) => entry.id)).toEqual([acceptedEvidenceId]);
+    expect(body.evidence[0]?.status).toBe("accepted");
+    expect(body.evidence[0]).not.toHaveProperty("report_id");
   });
 });

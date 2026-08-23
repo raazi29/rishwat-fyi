@@ -1,6 +1,6 @@
 import { evidence as evidenceTable, reports as reportsTable } from "@rishwat/database";
 import { publicIdSchema, uuidSchema } from "@rishwat/validation";
-import { eq, type SQL } from "drizzle-orm";
+import { and, eq, type SQL } from "drizzle-orm";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import type { AppEnv } from "../env.js";
@@ -130,7 +130,6 @@ evidence.post("/", evidenceRateLimit, limitUploadBody, async (c) => {
   return c.json(
     {
       id: row.id,
-      report_id: report.id,
       mime_type: mime,
       size_bytes: stored.size,
       sha256,
@@ -159,7 +158,12 @@ evidence.get("/:id", standardRateLimit, async (c) => {
       uploaded_at: evidenceTable.uploaded_at,
     })
     .from(evidenceTable)
-    .where(eq(evidenceTable.id, idParsed.data))
+    .where(
+      and(
+        eq(evidenceTable.id, idParsed.data),
+        eq(evidenceTable.status, "accepted"),
+      ),
+    )
     .limit(1);
   if (!row) throw notFound("Evidence not found");
   return c.json(row);

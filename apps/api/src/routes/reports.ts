@@ -8,7 +8,7 @@ import {
 } from "@rishwat/database";
 import { publicIdSchema, reportSubmissionSchema } from "@rishwat/validation";
 import { timingSafeEqual } from "node:crypto";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, notInArray, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { DEFAULT_TRUSTED_PROXY_HOPS } from "../config.js";
 import type { AppEnv } from "../env.js";
@@ -218,7 +218,12 @@ reports.get("/:publicId", standardRateLimit, async (c) => {
     .innerJoin(servicesTable, eq(servicesTable.id, reportsTable.service_id))
     .innerJoin(states, eq(states.id, reportsTable.state_id))
     .innerJoin(districts, eq(districts.id, reportsTable.district_id))
-    .where(eq(reportsTable.public_id, idParsed.data))
+    .where(
+      and(
+        eq(reportsTable.public_id, idParsed.data),
+        notInArray(reportsTable.status, ["rejected", "withdrawn"]),
+      ),
+    )
     .limit(1);
 
   if (!row) throw notFound("Report not found");
@@ -233,7 +238,12 @@ reports.get("/:publicId", standardRateLimit, async (c) => {
       uploaded_at: evidenceTable.uploaded_at,
     })
     .from(evidenceTable)
-    .where(eq(evidenceTable.report_id, row.id));
+    .where(
+      and(
+        eq(evidenceTable.report_id, row.id),
+        eq(evidenceTable.status, "accepted"),
+      ),
+    );
 
   return c.json({
     public_id: row.public_id,

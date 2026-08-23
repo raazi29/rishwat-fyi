@@ -71,6 +71,22 @@ describe("admin moderation", () => {
     expect(body.items.some((r) => r.public_id === publicId)).toBe(true);
   });
 
+  it("preserves the queue total when the requested page is beyond the result set", async () => {
+    await submitReport();
+    const headers = { authorization: `Bearer ${adminToken}` };
+
+    const firstPage = await app.request("/admin/queue?per_page=1", { headers });
+    expect(firstPage.status).toBe(200);
+    const firstBody = (await firstPage.json()) as { total: number };
+    expect(firstBody.total).toBeGreaterThan(0);
+
+    const beyond = await app.request("/admin/queue?page=999999&per_page=1", { headers });
+    expect(beyond.status).toBe(200);
+    const beyondBody = (await beyond.json()) as { total: number; items: unknown[] };
+    expect(beyondBody.items).toEqual([]);
+    expect(beyondBody.total).toBeGreaterThanOrEqual(firstBody.total);
+  });
+
   it("validates a report with mark_validated", async () => {
     const publicId = await submitReport();
     const res = await decide({ public_id: publicId, action: "mark_validated" });

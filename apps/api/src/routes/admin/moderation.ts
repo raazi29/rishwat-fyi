@@ -42,6 +42,9 @@ interface QueueRow {
   pending_evidence: number;
   created_at: string;
   status_changed_at: string;
+}
+
+interface QueueCountRow {
   total_count: number;
 }
 
@@ -54,28 +57,38 @@ moderation.get("/queue", async (c) => {
   const offset = (page - 1) * per_page;
   const statusCond = status ? sql`where r.status = ${status}::report_status` : sql``;
 
-  const rows = await execRows<QueueRow>(
-    c.get("db"),
-    sql`
-      select r.public_id, r.status, r.description, r.abuse_score::text as abuse_score,
-        r.duplicate_group_id::text as duplicate_group_id,
-        s.name as service_name, st.name as state_name, di.name as district_name,
-        (select count(*)::int from evidence e
-           where e.report_id = r.id and e.status = 'pending_review') as pending_evidence,
-        ${isoUtc("r.created_at")} as created_at,
-        ${isoUtc("r.status_changed_at")} as status_changed_at,
-        (count(*) over())::int as total_count
-      from reports r
-      join services s on s.id = r.service_id
-      join states st on st.id = r.state_id
-      join districts di on di.id = r.district_id
-      ${statusCond}
-      order by r.abuse_score desc, r.created_at asc
-      limit ${per_page} offset ${offset}
-    `,
-  );
+  const db = c.get("db");
+  const [countRows, rows] = await Promise.all([
+    execRows<QueueCountRow>(
+      db,
+      sql`
+        select count(*)::int as total_count
+        from reports r
+        ${statusCond}
+      `,
+    ),
+    execRows<QueueRow>(
+      db,
+      sql`
+        select r.public_id, r.status, r.description, r.abuse_score::text as abuse_score,
+          r.duplicate_group_id::text as duplicate_group_id,
+          s.name as service_name, st.name as state_name, di.name as district_name,
+          (select count(*)::int from evidence e
+             where e.report_id = r.id and e.status = 'pending_review') as pending_evidence,
+          ${isoUtc("r.created_at")} as created_at,
+          ${isoUtc("r.status_changed_at")} as status_changed_at
+        from reports r
+        join services s on s.id = r.service_id
+        join states st on st.id = r.state_id
+        join districts di on di.id = r.district_id
+        ${statusCond}
+        order by r.abuse_score desc, r.created_at asc
+        limit ${per_page} offset ${offset}
+      `,
+    ),
+  ]);
 
-  const first = rows[0];
+  const total = countRows[0]?.total_count ?? 0;
   const items = rows.map((r) => ({
     public_id: r.public_id,
     status: r.status,
@@ -89,7 +102,7 @@ moderation.get("/queue", async (c) => {
     created_at: r.created_at,
     status_changed_at: r.status_changed_at,
   }));
-  return c.json({ total: first ? first.total_count : 0, page, per_page, items });
+  return c.json({ total, page, per_page, items });
 });
 
 // POST /reports/decide — apply a moderator decision atomically: transition the

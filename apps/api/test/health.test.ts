@@ -46,6 +46,9 @@ describe("GET /health", () => {
     expect(body.status).toBe("ok");
     expect(["up", "down"]).toContain(body.database);
     expect(Number.isNaN(Date.parse(body.time))).toBe(false);
+    expect(res.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(res.headers.get("x-frame-options")).toBe("SAMEORIGIN");
+    expect(res.headers.get("referrer-policy")).toBe("no-referrer");
   });
 
   it("returns database: up when the test DB is reachable", async () => {

@@ -13,20 +13,21 @@ This document is the human-readable companion. When the two disagree, the OpenAP
 ## Conventions
 
 - **Content type:** JSON (`application/json`) except `GET /datasets/reports.csv` (`text/csv`) and evidence uploads (`multipart/form-data`).
-- **Errors:** every non-2xx response has the shape `{ "error": { "code": "<machine-readable-code>", "message": "<human-readable-message>" } }`. Codes include `not_found`, `unauthorized`, `forbidden`, `bad_request`, `conflict`, `too_many_requests`, `internal_error`.
+- **Errors:** every non-2xx response has the shape `{ "error": { "code": "<machine-readable-code>", "message": "<human-readable-message>" } }`. Codes include `not_found`, `unauthorized`, `forbidden`, `bad_request`, `conflict`, `rate_limited`, `internal_error`.
 - **Money:** monetary values are decimal strings (e.g. `"1500.00"`) matching `numeric(12,2)` precision, never floats.
 - **Pagination:** list endpoints accept `page` (≥ 1, default 1) and `per_page` (1–100, default 20) and return `{ total, items }`.
-- **Rate limiting:** see the table below. Limiters key on the client IP (`x-forwarded-for` → `cf-connecting-ip` → `"unknown"`). Exceeded limits return `429` with `too_many_requests`.
+- **Rate limiting:** see the table below. Limiters key on the client IP resolved from the socket plus the configured number of trusted `x-forwarded-for` hops. Exceeded limits return `429` with `rate_limited`.
 
 ### Rate limits
 
 | Limiter | Limit | Applied to |
 | --- | --- | --- |
 | `standardRateLimit` | 60 requests / minute per IP | Public read endpoints (`/search`, `/services`, `/locations/*`) |
-| `strictRateLimit` | 3 requests / hour per IP | `POST /reports` and `POST /admin/auth/login` |
+| `strictRateLimit` | 3 requests / hour per IP | `POST /reports` |
 | `evidenceRateLimit` | 10 requests / hour per IP | `POST /evidence` |
+| `authRateLimit` | 10 requests / 15 minutes per IP | `POST /admin/auth/login` |
 
-Login shares the strict limiter rather than having its own, so failed sign-in attempts are bounded to the same 3 per hour.
+Login uses its own limiter so a few password mistakes do not consume a citizen's report-submission allowance.
 
 The client IP a limiter keys on is derived according to `TRUSTED_PROXY_HOPS`. When it is `0` (the default) forwarding headers are ignored entirely and only the socket peer counts; behind a proxy or CDN it must be set to the number of hops you control, or clients can forge the value and evade the limits.
 
@@ -58,12 +59,12 @@ A missing/invalid token returns `401 unauthorized`; a valid token with insuffici
 | POST | `/reports` | public | strict (3/h) | body: report submission | `201 { public_id, token, status }` |
 | GET | `/reports/:publicId/status` | public | — | query: `token` | `{ public_id, status, status_changed_at }` or `404` |
 | GET | `/reports/:publicId` | public | — | path: `publicId` | public report view |
-| POST | `/evidence` | public | evidence (10/h) | multipart file (≤ 20 MB) | `201 { id, report_id, mime_type, size_bytes, sha256, status, retention_until }` |
-| GET | `/evidence/:id` | public | — | path: `id` | evidence metadata (no content) |
+| POST | `/evidence` | public | evidence (10/h) | multipart file (≤ 20 MB) | `201 { id, mime_type, size_bytes, sha256, status, retention_until }` |
+| GET | `/evidence/:id` | public | — | path: `id` | accepted evidence metadata (no content); `404` for pending/rejected |
 | GET | `/datasets` | public | — | — | `{ datasets, generated_at, license }` |
 | GET | `/datasets/reports.csv` | public | — | — | CSV (`text/csv`, `Cache-Control: public, max-age=300`) |
 | GET | `/datasets/reports.json` | public | — | — | `{ total, rows }` (`application/json`, `Cache-Control: public, max-age=300`) |
-| GET | `/doc` | public | — | — | JSON index of documentation endpoints |
+| GET | `/doc` | public | — | — | HTML API documentation landing page |
 | GET | `/doc/openapi.json` | public | — | — | OpenAPI 3.0 specification |
 | POST | `/admin/auth/login` | public | auth | body: `{ email, password }` | `{ token, user }` |
 | GET | `/admin/queue` | moderator | — | query: `status`, `page`, `per_page` | paginated queue |
@@ -316,7 +317,7 @@ Wrong token (or a token whose hash does not match) returns `404` — deliberatel
 
 ### `GET /reports/:publicId`
 
-Public report view: service/state/district names, dates, amounts, `visits`, `delay_days`, the **redacted** description, the list of evidence file metadata, and the report status. Contains no PII fields (no IP hash, device hash, token, or office).
+Public report view: service/state/district names, dates, amounts, `visits`, `delay_days`, the **redacted** description, accepted evidence metadata, and the report status. Contains no PII fields (no IP hash, device hash, token, or office). Rejected and withdrawn reports return `404` publicly; their submitters can still retrieve terminal status through the token-protected status endpoint.
 
 ### `POST /evidence`
 
@@ -339,7 +340,6 @@ Response `201`:
 ```json
 {
   "id": "<uuid>",
-  "report_id": "<uuid>",
   "mime_type": "image/png",
   "size_bytes": 20480,
   "sha256": "<hex>",
@@ -352,7 +352,7 @@ Response `201`:
 
 ### `GET /evidence/:id`
 
-Evidence **metadata only** — id, status, mime type, size, `retention_until` — never the file content and never for non-public statuses. Used by the public report view to list attached evidence.
+Evidence **metadata only** — id, status, mime type, size, SHA-256 and upload time — never the file content, internal report UUID, or storage key. Only `accepted` evidence is public; pending-review and rejected evidence return `404`. Used by the public report view to list reviewed attachments.
 
 ### `GET /datasets`
 
@@ -389,11 +389,7 @@ Both exports contain **only published reports** (statuses `validated`, `corrobor
 
 ### `GET /doc`
 
-JSON index of machine-readable documentation:
-
-```json
-{ "openapi": "/doc/openapi.json", "datasets": "/datasets", "data_dictionary": "docs/data-dictionary.md" }
-```
+HTML landing page linking to the machine-readable OpenAPI document and public data resources. The authoritative JSON specification is `GET /doc/openapi.json`.
 
 ### `GET /doc/openapi.json`
 

@@ -4,6 +4,7 @@ import { bodyLimit } from "hono/body-limit";
 import { cors } from "hono/cors";
 import { HTTPException } from "hono/http-exception";
 import { logger } from "hono/logger";
+import { secureHeaders } from "hono/secure-headers";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { loadConfig, type AppConfig } from "./config.js";
 import type { AppEnv } from "./env.js";
@@ -81,6 +82,11 @@ export function createApp(
       ? new Hono<AppEnv>().basePath(options.basePath)
       : new Hono<AppEnv>()
   ) as Hono<AppEnv>;
+
+  // Baseline browser/API hardening for every response, including the HTML docs
+  // landing page and structured error responses. CORS is configured separately
+  // below and remains deliberately scoped by route family.
+  app.use("*", secureHeaders());
 
   // Hono's logger prints the path INCLUDING the query string, and
   // GET /reports/:publicId/status accepts the one-time submission token as

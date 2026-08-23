@@ -100,4 +100,25 @@ describe("GET /reports/:publicId", () => {
     expect("ip_hash" in body).toBe(false);
     expect(JSON.stringify(body)).not.toContain("ip_hash");
   });
+
+  it.each(["rejected", "withdrawn"] as const)(
+    "hides a %s report publicly while preserving owner status lookup",
+    async (status) => {
+      const created = (await (await submit(validBody())).json()) as {
+        public_id: string;
+        token: string;
+      };
+      await boot.db.execute(sql`
+        update reports set status = ${status}, status_changed_at = now()
+        where public_id = ${created.public_id}
+      `);
+
+      expect((await app.request(`/reports/${created.public_id}`)).status).toBe(404);
+      const ownerRes = await app.request(
+        `/reports/${created.public_id}/status?token=${encodeURIComponent(created.token)}`,
+      );
+      expect(ownerRes.status).toBe(200);
+      expect(((await ownerRes.json()) as { status: string }).status).toBe(status);
+    },
+  );
 });
