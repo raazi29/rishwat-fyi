@@ -29,13 +29,21 @@ export function SiteHeader() {
         <SiteNav className="hidden lg:flex" />
 
         <div className="flex shrink-0 items-center gap-2">
-          {/* Below `lg` the raised Report action already lives in the bottom tab
-              bar, so a second copy here only crowds the wordmark — at 640-1023px
-              the header used to run wordmark, descriptor, button, toggle and
-              hamburger into each other. */}
-          <ButtonLink href="/report" variant="primary" className="hidden lg:inline-flex">
-            Report anonymously
-          </ButtonLink>
+          {/* The bottom tab bar was removed, but the header's `Report`
+              action still only needs to exist once the drawer nav takes
+              over layout at `lg`; below that, `MobileNav`'s own primary
+              button covers it. Visibility is controlled on a wrapping
+              `span`, not on the button's own className: `cn()` does no
+              Tailwind conflict resolution (see lib/utils/cn.ts), so a
+              trailing `hidden` string can lose to `inline-flex` baked into
+              Button's own base classes depending on generated CSS order. A
+              display utility on a plain wrapper never fights the button's
+              own classes. */}
+          <span className="hidden lg:inline-flex">
+            <ButtonLink href="/report" variant="primary">
+              Report anonymously
+            </ButtonLink>
+          </span>
           <ThemeToggle />
           <MobileNav className="lg:hidden" />
         </div>
