@@ -46,6 +46,16 @@ const PUBLIC_CORS_PATHS = [
 ] as const;
 
 /**
+ * Strip credential-shaped query parameters out of anything bound for stdout.
+ * The one-time report token is the only such value the API accepts in a URL, but
+ * the pattern is deliberately broad so a future `?key=` or `?secret=` is covered
+ * the day it is added rather than the day it leaks.
+ */
+function redactSecrets(text: string): string {
+  return text.replace(/\b(token|key|secret|password)=[^&\s]+/gi, "$1=REDACTED");
+}
+
+/**
  * Build the Hono application. `db`, `storage` and `config` are injected onto the
  * request context so routes and middleware can read them without module-level
  * globals — this also makes the app trivial to boot in tests.
@@ -53,7 +63,12 @@ const PUBLIC_CORS_PATHS = [
 export function createApp(db: Db, storage: EvidenceStorage, config: AppConfig) {
   const app = new Hono<AppEnv>();
 
-  app.use("*", logger());
+  // Hono's logger prints the path INCLUDING the query string, and
+  // GET /reports/:publicId/status accepts the one-time submission token as
+  // `?token=` — the single credential for both status lookup and evidence
+  // upload. Left alone, every status check would deposit a live token into the
+  // platform's log retention. Redact it on the way out.
+  app.use("*", logger((message, ...rest) => console.log(redactSecrets(message), ...rest)));
   app.use("*", async (c, next) => {
     c.set("db", db);
     c.set("storage", storage);
@@ -109,7 +124,18 @@ export function createApp(db: Db, storage: EvidenceStorage, config: AppConfig) {
     if (err instanceof HTTPException) {
       return err.getResponse();
     }
-    console.error("Unhandled error:", err);
+    // Log a whitelist, never the raw error object. A PostgresError copies the
+    // server's ErrorResponse wholesale, and Postgres puts row VALUES in the
+    // `detail` field of a constraint violation ("Key (email)=(...) already
+    // exists"). Dumping the object would write report content and admin emails
+    // into the platform's log store.
+    const e = err as { name?: string; message?: string; code?: string; stack?: string };
+    console.error("Unhandled error:", {
+      name: e.name,
+      code: e.code,
+      message: redactSecrets(e.message ?? String(err)),
+      stack: e.stack,
+    });
     return c.json(
       { error: { code: "internal_error", message: "Internal server error" } },
       500,

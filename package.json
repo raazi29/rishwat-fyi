@@ -12,10 +12,11 @@
     "db:up": "bash scripts/db-up.sh",
     "db:migrate": "bash scripts/db-migrate.sh",
     "db:seed": "bash scripts/db-seed.sh",
+    "smoke-test": "node scripts/smoke-test.mjs",
     "create-admin": "npm run create-admin -w apps/api"
   },
   "dependencies": {
     "next": "15.5.23"
   },
-  "engines": { "node": ">=20" }
+  "engines": { "node": ">=20.6" }
 }

@@ -6,6 +6,7 @@ import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import { SkipLink } from "@/components/layout/skip-link";
 import { ThemeScript } from "@/components/layout/theme-script";
+import { SITE_URL } from "@/lib/site-url";
 
 import "./globals.css";
 
@@ -36,10 +37,8 @@ const jetbrainsMono = JetBrains_Mono({
   variable: "--font-jetbrains-mono",
 });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-
 export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "Rishwat.fyi — Government, as experienced by citizens",
     template: "%s · Rishwat.fyi",

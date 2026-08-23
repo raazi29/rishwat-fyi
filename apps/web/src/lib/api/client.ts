@@ -34,19 +34,47 @@ export interface ApiFailure {
 
 export type ApiResult<T> = { ok: true; data: T } | { ok: false; error: ApiFailure };
 
+/** Where a local `npm run dev` expects apps/api to be listening. */
+const DEV_API_BASE_URL = "http://localhost:8787";
+
+/**
+ * The origin server-side fetches go to. `API_BASE_URL` wins so a deployment can
+ * route internal traffic over a private network; `NEXT_PUBLIC_API_BASE_URL` is
+ * the public fallback.
+ *
+ * Falling back to localhost is a DEVELOPMENT convenience only. In production it
+ * would be a silent misconfiguration: every fetch fails, and the site serves the
+ * bundled fixtures under a sample-data notice instead of real figures. The
+ * production build is guarded in next.config.ts so a deploy with neither value
+ * set fails loudly rather than shipping that.
+ */
 export function apiBaseUrl(): string {
-  return (
-    process.env.API_BASE_URL ??
-    process.env.NEXT_PUBLIC_API_BASE_URL ??
-    "http://localhost:8787"
-  ).replace(/\/+$/, "");
+  const base = process.env.API_BASE_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL;
+  return (base === undefined || base === "" ? DEV_API_BASE_URL : base).replace(/\/+$/, "");
+}
+
+/**
+ * The origin to put in URLs a BROWSER will follow — dataset download links, the
+ * documented base URL on /data/api, the curl snippets on /mirroring.
+ *
+ * Deliberately prefers the public variable over `API_BASE_URL`: the latter may
+ * be an internal hostname that only the server can resolve, and printing that to
+ * a reader gives them a link that cannot work.
+ */
+export function publicApiBaseUrl(): string {
+  const base = process.env.NEXT_PUBLIC_API_BASE_URL ?? process.env.API_BASE_URL;
+  return (base === undefined || base === "" ? DEV_API_BASE_URL : base).replace(/\/+$/, "");
 }
 
 /**
  * The sample-data kill switch. Unset (the local-development default) means the
  * bundled fixtures may stand in for an unreachable API; `"false"` means they
- * may not. Read at call time rather than module load so a value injected after
- * the bundle is evaluated still takes effect.
+ * may not.
+ *
+ * NOTE: `NEXT_PUBLIC_*` values are inlined as string literals by the compiler at
+ * BUILD time — in the server bundle as well as the client one. Changing this in
+ * a hosting dashboard therefore has no effect until the next redeploy; it is not
+ * a runtime switch, despite being read inside a function.
  */
 export function sampleFallbackAllowed(): boolean {
   return process.env.NEXT_PUBLIC_ALLOW_SAMPLE_FALLBACK !== "false";

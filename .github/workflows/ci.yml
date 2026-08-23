@@ -100,3 +100,35 @@ jobs:
       # .next/types/**, both of which apps/web/tsconfig.json includes.
       - name: Typecheck (apps/web)
         run: npm run typecheck -w apps/web
+
+  # The Railway deployment artifact. Nothing else in this workflow exercises
+  # apps/api/Dockerfile, and it does NOT install the way the jobs above do: it
+  # runs a *filtered* workspace install (`npm ci --workspace apps/api
+  # --include-workspace-root`) whose ability to pull in @rishwat/database's
+  # transitive dependencies is the whole reason that Dockerfile carries fourteen
+  # lines of explanation. Without this job, every regression in it — a missing
+  # COPY, a lockfile the filtered install rejects, a devDependency that turns out
+  # not to be installed — is discovered on Railway, in production.
+  api-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Build context is the repository root, not apps/api — the image has to
+      # reproduce the monorepo layout for workspace resolution to work.
+      - name: Build API image
+        run: docker build -f apps/api/Dockerfile -t rishwat-api .
+
+      # Prove the image can actually reach its entrypoint: tsx must be present
+      # and every workspace import must resolve. loadConfig() throws on the empty
+      # environment here, which is the correct and expected outcome — what is
+      # being tested is that we get a *config* error rather than a module
+      # resolution error or a missing binary.
+      - name: Smoke-test the entrypoint
+        run: |
+          output=$(docker run --rm rishwat-api 2>&1 || true)
+          echo "$output"
+          if ! grep -q "Missing/invalid required configuration" <<<"$output"; then
+            echo "::error::Container did not reach loadConfig() — the image is broken."
+            exit 1
+          fi

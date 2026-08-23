@@ -1,5 +1,30 @@
 import type { NextConfig } from "next";
 
+// Fail a real production deploy that is missing the API origin, rather than
+// shipping a site that quietly serves the bundled sample dataset.
+//
+// Without this the misconfiguration is invisible: `apiBaseUrl()` falls back to
+// http://localhost:8787, every server-side fetch fails, and the sample-fallback
+// path renders fixtures under a notice strip — a live-looking site full of
+// invented fees. `NEXT_PUBLIC_*` values are inlined at build time, so the check
+// has to happen here, at build, not at request time.
+//
+// Scoped to VERCEL_ENV=production on purpose: CI builds with no API running (by
+// design — see .github/workflows/ci.yml) and local `next build` must both keep
+// working untouched.
+if (
+  process.env.VERCEL_ENV === "production" &&
+  !process.env.API_BASE_URL &&
+  !process.env.NEXT_PUBLIC_API_BASE_URL
+) {
+  throw new Error(
+    "Production build is missing the API origin. Set API_BASE_URL (server-side fetches) " +
+      "and/or NEXT_PUBLIC_API_BASE_URL (browser-facing links) in the project's environment " +
+      "variables. Without one, the deployed site falls back to http://localhost:8787 and " +
+      "serves sample data instead of live reports.",
+  );
+}
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,

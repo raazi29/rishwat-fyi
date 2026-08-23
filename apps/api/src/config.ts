@@ -54,10 +54,16 @@ export function loadConfig(env: Env = process.env): AppConfig {
     return v;
   };
 
+  const isProduction = env.NODE_ENV === "production";
+
   // Vitest sets VITEST / NODE_ENV=test. Test runs relax the secret-strength rule
   // (and default rate limiting off, below) so fixtures like "test-secret-for-dev"
   // in docker-compose keep working.
-  const isTest = env.NODE_ENV === "test" || env.VITEST !== undefined;
+  //
+  // `&& !isProduction` is the important half: without it a stray VITEST variable
+  // in a deployment's environment would silently switch off the JWT-strength
+  // check. Nothing relaxes in production, whatever else is set.
+  const isTest = (env.NODE_ENV === "test" || env.VITEST !== undefined) && !isProduction;
 
   const databaseUrl = require("DATABASE_URL");
   const jwtSecret = require("JWT_SECRET");
@@ -83,16 +89,44 @@ export function loadConfig(env: Env = process.env): AppConfig {
     storage = { driver: "supabase", url, serviceRoleKey, bucket };
   } else if (driver === "local") {
     storage = { driver: "local", dir: env.EVIDENCE_STORAGE_DIR ?? "./data/evidence" };
+    // Container filesystems are ephemeral. With the local driver on a platform
+    // like Railway, uploads return 201 and the evidence row commits, but the
+    // bytes are destroyed on the next redeploy while the rows persist pointing
+    // at nothing — and nothing catches it: /health only checks the directory is
+    // writable (the image pre-creates it), and the retention purge uses
+    // `fs.rm(..., { force: true })`, so it counts already-vanished files as
+    // successfully deleted and reports a clean run. Refuse to boot instead.
+    if (isProduction && env.ALLOW_LOCAL_EVIDENCE !== "true") {
+      missing.push(
+        'EVIDENCE_STORAGE_DRIVER (is "local" in production — container filesystems are ' +
+          "ephemeral and evidence would be lost on every redeploy; use \"supabase\", or set " +
+          "ALLOW_LOCAL_EVIDENCE=true if EVIDENCE_STORAGE_DIR is a persistent volume)",
+      );
+    }
   } else {
     missing.push(`EVIDENCE_STORAGE_DRIVER (got "${driver}", expected "local" | "supabase")`);
     storage = { driver: "local", dir: "./data/evidence" };
+  }
+
+  // PUBLIC_BASE_URL is published, not just used internally: it builds the
+  // download links in GET /datasets that every mirror consumes, and the
+  // `servers[]` entry in the OpenAPI document. Defaulting it to localhost in
+  // production would quietly ship an unusable dataset index to downstream
+  // mirrors, so require it explicitly there.
+  if (isProduction && (env.PUBLIC_BASE_URL === undefined || env.PUBLIC_BASE_URL === "")) {
+    missing.push("PUBLIC_BASE_URL (published in dataset links and the OpenAPI servers list)");
   }
 
   if (missing.length > 0) {
     throw new Error(`Missing/invalid required configuration: ${missing.join(", ")}`);
   }
 
-  const portRaw = env.PORT ?? "8787";
+  // Strict digits only: Number.parseInt("8787x") silently returns 8787, so a
+  // typo'd or half-interpolated value would bind a port nobody asked for.
+  const portRaw = (env.PORT ?? "8787").trim();
+  if (!/^\d+$/.test(portRaw)) {
+    throw new Error(`Invalid PORT: "${portRaw}"`);
+  }
   const port = Number.parseInt(portRaw, 10);
   if (!Number.isInteger(port) || port <= 0) {
     throw new Error(`Invalid PORT: "${portRaw}"`);
@@ -109,6 +143,21 @@ export function loadConfig(env: Env = process.env): AppConfig {
   const trustedProxyHops = Number.parseInt(hopsRaw, 10);
   if (!Number.isInteger(trustedProxyHops) || trustedProxyHops < 0) {
     throw new Error(`Invalid TRUSTED_PROXY_HOPS: "${hopsRaw}"`);
+  }
+
+  // 0 is the right default for a directly-exposed process, but it is the WRONG
+  // value behind a platform proxy (Railway, Render, Fly, Cloudflare, nginx) —
+  // there the socket peer is always the proxy, so every client on the internet
+  // collapses into one bucket. That silently turns "3 reports/hour per person"
+  // into "3 reports/hour, globally", and makes `count(distinct ip_hash) >= 2`
+  // unreachable, so no aggregate can ever be published. Too situational to
+  // refuse to boot over; loud enough that it will not be missed in the logs.
+  if (isProduction && trustedProxyHops === 0) {
+    console.warn(
+      "[config] TRUSTED_PROXY_HOPS=0 in production: x-forwarded-for is ignored, so every " +
+        "client shares one rate-limit bucket and one ip_hash. Correct only if this process " +
+        "is exposed directly to the internet. Behind a platform proxy or CDN, set it to 1.",
+    );
   }
 
   const adminCorsOrigins = (env.ADMIN_CORS_ORIGINS ?? "")

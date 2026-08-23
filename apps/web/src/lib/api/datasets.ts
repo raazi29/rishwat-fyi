@@ -11,7 +11,14 @@
  * unreachable.
  */
 
-import { apiBaseUrl, apiFetch, withSample, type Sourced } from "./client";
+import {
+  apiFetch,
+  publicApiBaseUrl,
+  SampleFallbackDisabledError,
+  sampleFallbackAllowed,
+  withSample,
+  type Sourced,
+} from "./client";
 import { deriveTotals, type DatasetRow } from "./dataset-aggregate";
 import type { DatasetIndex, Paginated, PlatformTotals, ServiceListItem, StateRef } from "./types";
 import { sampleDatasetIndex } from "@/lib/fixtures/datasets";
@@ -24,9 +31,16 @@ export function getDatasetIndex(): Promise<Sourced<DatasetIndex>> {
   );
 }
 
-/** Absolute URL of a raw dataset export, e.g. `/datasets/reports.csv`. */
+/**
+ * Absolute URL of a raw dataset export, e.g. `/datasets/reports.csv`.
+ *
+ * Uses `publicApiBaseUrl()`, not `apiBaseUrl()`: this link is handed to a
+ * browser to follow. If a deployment sets `API_BASE_URL` to a private/internal
+ * origin for server-side fetches, that host is not resolvable from the reader's
+ * machine and every download button would 404 for them.
+ */
 export function datasetDownloadUrl(name: string, format: "csv" | "json"): string {
-  return `${apiBaseUrl()}/datasets/${encodeURIComponent(name)}.${format}`;
+  return `${publicApiBaseUrl()}/datasets/${encodeURIComponent(name)}.${format}`;
 }
 
 /**
@@ -58,6 +72,16 @@ export async function getPlatformTotals(): Promise<Sourced<PlatformTotals>> {
   }
 
   const failure = !services.ok ? services : !states.ok ? states : dataset;
+
+  // This function computes its totals by hand rather than going through
+  // `withSample`, so it has to honour the kill switch by hand too. Without this,
+  // an operator who set NEXT_PUBLIC_ALLOW_SAMPLE_FALLBACK=false would still get
+  // invented "citizen reports / states covered / corroborated" figures in the
+  // home-page hero during an outage — on the most-visited page on the site.
+  if (!failure.ok && failure.error.code !== "not_found" && !sampleFallbackAllowed()) {
+    throw new SampleFallbackDisabledError(failure.error);
+  }
+
   return {
     data: samplePlatformTotals,
     source: "sample",

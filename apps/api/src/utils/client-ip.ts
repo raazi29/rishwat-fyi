@@ -46,18 +46,24 @@ function socketAddress(c: Context): string | null {
 
 /**
  * Pick the entry `hops` positions from the right of an `x-forwarded-for` list.
- * A list shorter than `hops` means the request did not traverse the expected
- * chain (direct hit, or a proxy that does not append); the leftmost entry is then
- * the most specific value available.
+ *
+ * A list SHORTER than `hops` means the request did not traverse the expected
+ * chain (a direct hit, or a proxy that overwrites rather than appends). The
+ * remaining entries are then all client-written, so there is nothing
+ * trustworthy here and we return null rather than falling back to the leftmost
+ * value: `parts[0]` is the most *specific* entry but also the one an attacker
+ * chooses outright, and handing it back would let anyone rotate the header to
+ * forge ip_hash diversity and walk past every rate limit. Falling through to the
+ * socket address (see `clientIp`) is the correct, un-forgeable answer.
  */
 function forwardedForHop(header: string, hops: number): string | null {
   const parts = header
     .split(",")
     .map((p) => p.trim())
     .filter((p) => p !== "");
-  if (parts.length === 0) return null;
   const index = parts.length - hops;
-  return parts[index >= 0 ? index : 0] ?? null;
+  if (index < 0) return null;
+  return parts[index] ?? null;
 }
 
 /**
@@ -79,10 +85,10 @@ export function clientIp(c: Context, hops: number): string | null {
     if (hop) return hop;
   }
 
-  // Cloudflare overwrites cf-connecting-ip at its edge, so it is only meaningful
-  // when a proxy we trust (Cloudflare itself) is actually in front of us.
-  const cf = c.req.header("cf-connecting-ip")?.trim();
-  if (cf) return cf;
-
+  // Deliberately no `cf-connecting-ip` fallback. Cloudflare overwrites that
+  // header at its edge — but it also always appends to x-forwarded-for, so if we
+  // reached this line the request did NOT come through Cloudflare and any
+  // cf-connecting-ip present was written by the client. The branch was therefore
+  // only ever reachable in exactly the case where the value is forged.
   return socketAddress(c);
 }

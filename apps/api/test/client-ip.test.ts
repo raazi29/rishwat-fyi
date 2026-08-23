@@ -34,9 +34,23 @@ describe("clientIp", () => {
     expect(clientIp(c, 2)).toBe("5.6.7.8");
   });
 
-  it("falls back to the leftmost entry when the list is shorter than hops", () => {
+  it("refuses the leftmost entry when the list is shorter than hops", () => {
+    // A chain shorter than the configured hop count means the request did not
+    // traverse the proxies we trust, so every remaining entry is client-written.
+    // Returning parts[0] here would hand an attacker a free IP of their choosing
+    // — rotate the header and you forge ip_hash diversity and skip rate limits.
+    // No trustworthy value exists, and with no socket peer the answer is null.
     const c = ctx({ "x-forwarded-for": `${SPOOFED}, 5.6.7.8` });
-    expect(clientIp(c, 5)).toBe(SPOOFED);
+    expect(clientIp(c, 5)).toBeNull();
+  });
+
+  it("does not let a short x-forwarded-for become distinct spoofed identities", () => {
+    // Same corroboration bypass as the hops = 0 case below, reached via an
+    // under-length chain instead.
+    const a = clientIp(ctx({ "x-forwarded-for": "203.0.113.1" }), 2);
+    const b = clientIp(ctx({ "x-forwarded-for": "203.0.113.2" }), 2);
+    expect(a).toBe(b);
+    expect(a).toBeNull();
   });
 
   it("returns null when no forwarding header is present", () => {
@@ -53,8 +67,12 @@ describe("clientIp", () => {
     expect(clientIp(c, 1)).toBe("9.10.11.12");
   });
 
-  it("uses cf-connecting-ip when hops >= 1 and no x-forwarded-for is present", () => {
-    expect(clientIp(ctx({ "cf-connecting-ip": SPOOFED }), 1)).toBe(SPOOFED);
+  it("ignores cf-connecting-ip even at hops >= 1 when x-forwarded-for is absent", () => {
+    // Cloudflare overwrites cf-connecting-ip at its edge — but it also always
+    // appends to x-forwarded-for. So a request carrying cf-connecting-ip and NO
+    // x-forwarded-for did not come through Cloudflare, and the header was
+    // written by the client. Trusting it here only ever trusted a forgery.
+    expect(clientIp(ctx({ "cf-connecting-ip": SPOOFED }), 1)).toBeNull();
   });
 
   it("does not let two forged x-forwarded-for values become two distinct clients at hops = 0", () => {

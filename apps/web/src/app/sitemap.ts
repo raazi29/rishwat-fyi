@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 
 import { SampleFallbackDisabledError, listDepartments, listServices, listStates } from "@/lib/api";
+import { SITE_URL } from "@/lib/site-url";
 
 // Request-time rendering: the catalogue slugs come from the API, a separate
 // deployment not guaranteed reachable while the site is being built (see
@@ -10,8 +11,6 @@ import { SampleFallbackDisabledError, listDepartments, listServices, listStates 
 // API could bake a catalogue-less sitemap in until the next deploy. Rendered on
 // demand, the sitemap reflects the live catalogue and any API outage is transient.
 export const dynamic = "force-dynamic";
-
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/$/, "");
 
 type ChangeFrequency = NonNullable<MetadataRoute.Sitemap[number]["changeFrequency"]>;
 

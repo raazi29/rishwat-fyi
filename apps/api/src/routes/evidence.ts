@@ -2,6 +2,7 @@ import { evidence as evidenceTable, reports as reportsTable } from "@rishwat/dat
 import { publicIdSchema, uuidSchema } from "@rishwat/validation";
 import { eq, type SQL } from "drizzle-orm";
 import { Hono } from "hono";
+import { bodyLimit } from "hono/body-limit";
 import type { AppEnv } from "../env.js";
 import { badRequest, notFound } from "../errors.js";
 import { evidenceRateLimit } from "../middleware/rate-limit.js";
@@ -21,11 +22,36 @@ const ALLOWED_MIME = new Set([
   "application/pdf",
 ]);
 
+// Multipart framing (field names, boundaries, per-part headers) costs a little
+// over the file itself, so the transport ceiling sits slightly above the file
+// ceiling; the exact per-file limit is still enforced below on `file.size`.
+const MAX_UPLOAD_BODY_BYTES = MAX_EVIDENCE_BYTES + 64 * 1024;
+
+// Refuse an oversized body BEFORE anything reads it. `c.req.parseBody()` calls
+// Request.formData(), which materialises the entire multipart payload on the
+// heap — so without this guard an unauthenticated caller (no report id, no
+// token: both are only checked further down) could POST a multi-gigabyte body
+// and OOM-kill the container. `bodyLimit` rejects on Content-Length up front and
+// keeps counting for chunked requests that declare none.
+const limitUploadBody = bodyLimit({
+  maxSize: MAX_UPLOAD_BODY_BYTES,
+  onError: (c) =>
+    c.json(
+      {
+        error: {
+          code: "bad_request",
+          message: `File exceeds maximum size of ${MAX_EVIDENCE_BYTES} bytes`,
+        },
+      },
+      413,
+    ),
+});
+
 // POST / — multipart upload. Identifies and authorizes the linked report,
 // validates size and content type, stores the bytes in the configured backend
 // (key = report/sha256) and records an evidence row (status defaults to
 // pending_review for moderation).
-evidence.post("/", evidenceRateLimit, async (c) => {
+evidence.post("/", evidenceRateLimit, limitUploadBody, async (c) => {
   const db = c.get("db");
   const body = await c.req.parseBody();
 

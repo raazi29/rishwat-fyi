@@ -11,7 +11,7 @@ import {
   Prose,
   type TableOfContentsItem,
 } from "@/components/doc";
-import { apiBaseUrl } from "@/lib/api";
+import { publicApiBaseUrl } from "@/lib/api";
 
 import { PUBLIC_GROUPS } from "./_data/public-endpoints";
 import { ADMIN_ENDPOINTS } from "./_data/admin-endpoints";
@@ -36,7 +36,7 @@ const TOC: TableOfContentsItem[] = [
 ];
 
 export default function ApiReferencePage() {
-  const base = apiBaseUrl();
+  const base = publicApiBaseUrl();
   const openapiUrl = `${base}/doc/openapi.json`;
 
   return (

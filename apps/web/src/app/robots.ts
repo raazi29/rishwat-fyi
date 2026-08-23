@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/$/, "");
+import { SITE_URL } from "@/lib/site-url";
 
 /**
  * robots.txt — the public data is meant to be found and mirrored, so crawling

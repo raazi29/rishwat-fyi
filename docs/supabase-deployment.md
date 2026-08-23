@@ -83,7 +83,8 @@ On your production host, set exactly the environment variables the app reads (se
 
 | Variable | Value in production |
 | --- | --- |
-| `DATABASE_URL` | The Supabase **pooler** connection string: `postgresql://postgres.<ref>:<PASSWORD>@aws-0-<region>.pooler.supabase.com:6543/postgres` |
+| `DATABASE_URL` | The Supabase **pooler** connection string: `postgresql://postgres.<ref>:<PASSWORD>@aws-0-<region>.pooler.supabase.com:6543/postgres`. TLS is applied automatically for any non-local host, and port `6543` additionally disables prepared statements — Supavisor runs that port in transaction mode, where a client is rebound to a different backend between statements and server-side named statements do not survive |
+| `TRUSTED_PROXY_HOPS` | `1` behind a platform edge proxy (Railway, Render, Fly, Cloudflare). See the warning in Step 7 |
 | `PORT` | e.g. `8787` |
 | `JWT_SECRET` | A long, random string (generate with `openssl rand -hex 32`) — must differ from dev |
 | `ADMIN_EMAIL` | Email of the initial admin (used by `create-admin`) |
@@ -122,40 +123,53 @@ Additional moderators are created by admins through the same user model (email, 
 
 ## Step 7 — Deploy the API
 
-The API is a standard Node ≥ 20 Hono server. **No Supabase Functions are required** — deploy it on any platform you already use. Suggested minimal Dockerfile:
+The API is a standard Node ≥ 20.6 Hono server. **No Supabase Functions are required** — deploy it on any platform you already use.
 
-```dockerfile
-FROM node:20-alpine AS build
-WORKDIR /app
-COPY package*.json ./
-COPY apps packages ./
-RUN npm ci
-RUN npm run typecheck
+Use the real, maintained image at [`apps/api/Dockerfile`](../apps/api/Dockerfile). Build it with the **repository root** as the context, not `apps/api`:
 
-FROM node:20-alpine
-WORKDIR /app
-COPY --from=build /app ./
-ENV NODE_ENV=production
-EXPOSE 8787
-CMD ["npm", "run", "start", "-w", "apps/api"]
+```bash
+docker build -f apps/api/Dockerfile -t rishwat-api .
 ```
 
-Or deploy directly without containers on Fly.io, Render, or Railway: install the repo, `npm ci`, set the environment variables from Step 4, and run `npm run start -w apps/api` (or `npm run dev` with a process manager). Point `PUBLIC_BASE_URL` at whatever public URL the platform gives you, and terminate TLS at the platform's edge.
+The root context is required because this is an npm-workspaces monorepo: the API imports `@rishwat/database` and `@rishwat/validation`, which npm resolves by path from the root `package.json`. The image reproduces the `apps/` and `packages/` layout for exactly that reason — flattening them (`COPY apps packages ./`) merges their contents into `/app` and breaks workspace resolution. It also keeps devDependencies, deliberately: the entrypoint is TypeScript executed by `tsx`.
+
+For Railway, [`railway.json`](../railway.json) already points at that Dockerfile and sets the healthcheck; the start command comes from the image's `CMD`. Or deploy without containers on Fly.io or Render: `npm ci`, set the Step 4 variables, and run `npm run start -w apps/api`. Point `PUBLIC_BASE_URL` at whatever public URL the platform gives you, and terminate TLS at the platform's edge.
+
+> **Set `TRUSTED_PROXY_HOPS=1`** on any of these platforms. Their edge proxies mean the TCP peer the API sees is always the proxy, so the default of `0` collapses every visitor on the internet into a single rate-limit bucket and a single `ip_hash` — which makes `count(distinct ip_hash) >= 2` unreachable, so **no aggregate is ever published**. Nothing errors; the site just never shows a corroborated figure. The API logs a warning at boot if it sees `0` in production.
 
 Because `EVIDENCE_STORAGE_DRIVER=supabase`, the API writes evidence to Supabase Storage instead of the local disk — no local volume is needed for evidence.
 
 ## Step 8 — Smoke test
 
+Run the automated check against the live deployment. It exits non-zero if
+anything fails:
+
 ```bash
-curl -s https://<api-host>/health
-curl -s "https://<api-host>/search?q=licence"
-curl -s https://<api-host>/services/driving-licence
-curl -s https://<api-host>/datasets
+npm run smoke-test -- https://<api-host> https://<site-host>
 ```
 
-- `health` should report `"database": "up"`.
-- The service page should show both the official block and the citizen block.
-- `/datasets` should list the CSV and JSON exports.
+It is read-only — no reports are submitted and no data is created. It covers the
+failures that are **silent**, where the deployment looks fine and is quietly
+wrong:
+
+| Check | What a failure means |
+| --- | --- |
+| `database: up` | The connection works, which also proves TLS negotiated — a managed host that refused it would report `down` |
+| `storage.driver` | `local` means evidence is being written to an ephemeral container disk and will vanish on the next redeploy |
+| Dataset + OpenAPI URLs | A `localhost` URL here is being **published to every downstream mirror** |
+| Catalogue and geography row counts | `/health` succeeds against a completely empty database; these catch a deploy where migrate/seed never ran |
+| 24 concurrent queries | Prepared-statement collisions on the port-6543 pooler are load-dependent and never show up in a single request |
+| `/admin` CORS + auth | Admin responses carry `ip_hash` prefixes and moderation data and must not be readable cross-origin |
+| Oversize upload | Asserts the server rejects a large declared body *before reading it*; a server that waits can be OOM-killed by an unauthenticated caller |
+| Site sample-data strip | The frontend is serving the bundled fixtures instead of live data — the API is unreachable from it |
+| `robots.txt` / `sitemap.xml` | `localhost` URLs here will get the site de-indexed |
+
+Two things the script cannot see from outside, to confirm in the Railway
+dashboard: `TRUSTED_PROXY_HOPS=1`, and a replica count of exactly 1 (rate-limit
+buckets are per-process memory, so N replicas multiply every limit by N).
+
+Then verify the write path by hand, once:
+
 - Log in: `curl -s -X POST https://<api-host>/admin/auth/login -H 'Content-Type: application/json' -d '{"email":"admin@rishwat.fyi","password":"<password>"}'` → returns `{ token, user }`.
 - Submit a test report and upload a small evidence file; confirm the evidence row's `retention_until` is ≈ `now + 90 days` and the object lands in the private `evidence` bucket.
 

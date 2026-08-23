@@ -52,18 +52,28 @@ explanation of each, is [`.env.example`](../.env.example).
 
 | Variable | Value in production | Notes |
 | --- | --- | --- |
-| `DATABASE_URL` | Supabase pooled connection string | Required |
+| `DATABASE_URL` | Supabase pooled connection string | Required. TLS is applied automatically for any non-local host; port `6543` additionally disables prepared statements (Supavisor transaction mode) |
 | `JWT_SECRET` | 32+ random characters | Required. The API **refuses to boot** on a short or placeholder secret. Generate with `openssl rand -base64 48` |
-| `PUBLIC_BASE_URL` | `https://api.rishwat.fyi` | Used in dataset download links |
-| `EVIDENCE_STORAGE_DRIVER` | `supabase` | Container filesystems are ephemeral — do not use `local` in production |
+| `PUBLIC_BASE_URL` | `https://api.rishwat.fyi` | **Required** — the API refuses to boot without it in production. Published in `GET /datasets` download links and the OpenAPI `servers[]`, so a wrong value ships to every mirror |
+| `EVIDENCE_STORAGE_DRIVER` | `supabase` | Container filesystems are ephemeral. The API **refuses to boot** on `local` in production unless `ALLOW_LOCAL_EVIDENCE=true` |
 | `SUPABASE_URL` | Your project URL | Required when driver is `supabase` |
 | `SUPABASE_SERVICE_ROLE_KEY` | Service-role key | Required when driver is `supabase`. Secret |
 | `SUPABASE_STORAGE_BUCKET` | `evidence` | Must be a **private** bucket |
-| `TRUSTED_PROXY_HOPS` | See below | Security-critical |
+| `TRUSTED_PROXY_HOPS` | `1` on Railway | Security-critical — see below. The API logs a warning at boot if this is `0` in production |
 | `RATE_LIMIT_ENABLED` | `true` (or omit) | Never `false` in production |
 | `ADMIN_CORS_ORIGINS` | Usually omit | Only if the admin UI is on a different origin |
 
 `PORT` is injected by Railway; the server reads it and falls back to `8787`.
+
+The start command lives in the Dockerfile's `CMD`, not in `railway.json` — a
+`startCommand` there would be re-wrapped in a shell, which is the thing the
+exec-form `CMD` exists to avoid so `SIGTERM` reaches the graceful-shutdown
+handler directly.
+
+**Do not run more than one replica.** Rate-limit buckets are per-process
+in-memory state, so N replicas silently multiply every documented limit by N
+(3 reports/hour becomes 3N), and a redeploy resets every bucket. Scaling out
+requires moving them to a shared store first.
 
 ### `TRUSTED_PROXY_HOPS` — get this right
 
@@ -77,10 +87,18 @@ independence check gating auto-corroboration and public aggregate publication
 - `1` — one proxy you operate in front of the API.
 - `2` — two chained proxies, e.g. Cloudflare in front of a load balancer.
 
-Set it to the number of proxies **you actually control**. Setting it higher lets
-anyone forge their IP, manufacture a corroborated statistic, and bypass rate
-limits. Setting it lower behind a real proxy buckets every visitor together and
-makes rate limiting fire on innocent users.
+Set it to the number of proxies **you actually control**.
+
+Setting it *higher* than reality no longer allows IP forgery — an
+`x-forwarded-for` chain shorter than the configured hop count is rejected
+outright and falls through to the un-forgeable socket peer — but those requests
+then all share one identity.
+
+Setting it *lower* behind a real proxy is the dangerous direction, and it is
+silent. Every visitor collapses into the proxy's own address: rate limiting fires
+on innocent users, and because every report then carries the same `ip_hash`,
+`count(distinct ip_hash) >= 2` is never satisfied and **no aggregate is ever
+published**. Nothing errors; the site simply never shows a corroborated figure.
 
 Railway terminates TLS and proxies to the container, so `1` is the usual value
 there. Verify after deploying rather than guessing: submit two reports from
@@ -123,15 +141,27 @@ this job is not scheduled, that promise is not kept.
 `vercel.json` installs from the workspace root and builds `apps/web`. Import the
 repository into Vercel and leave the framework preset as Next.js.
 
+**Leave the project's Root Directory at the repository root.** Vercel reads
+`vercel.json` from the configured Root Directory and resolves `outputDirectory`
+relative to it, so this file only applies there. Pointing the Root Directory at
+`apps/web` makes Vercel ignore it entirely and fall back to auto-detection —
+which happens to work, but means none of the settings recorded here are the ones
+in effect.
+
 ### Environment variables
 
 The authoritative list is [`apps/web/.env.example`](../apps/web/.env.example).
 
+Every `NEXT_PUBLIC_*` value is inlined by the compiler at **build** time — in the
+server bundle as well as the browser one. Changing any of them in the Vercel
+dashboard has no effect until the next redeploy; none of them is a runtime
+switch.
+
 | Variable | Value in production | Notes |
 | --- | --- | --- |
-| `API_BASE_URL` | `https://api.rishwat.fyi` | Server-side calls |
-| `NEXT_PUBLIC_API_BASE_URL` | `https://api.rishwat.fyi` | Browser-side status lookups |
-| `NEXT_PUBLIC_SITE_URL` | `https://rishwat.fyi` | Canonical origin for metadata, sitemap and robots |
+| `API_BASE_URL` | `https://api.rishwat.fyi` | Server-side calls. **Required** — the production build fails if neither this nor `NEXT_PUBLIC_API_BASE_URL` is set |
+| `NEXT_PUBLIC_API_BASE_URL` | `https://api.rishwat.fyi` | The origin a reader's browser must reach: dataset download links, the base URL printed on `/data/api`, the curl snippets on `/mirroring`. Must be publicly resolvable even if `API_BASE_URL` is internal |
+| `NEXT_PUBLIC_SITE_URL` | `https://rishwat.fyi` | Canonical origin for metadata, sitemap and robots. Falls back to Vercel's `VERCEL_PROJECT_PRODUCTION_URL`, then localhost — a sitemap of localhost URLs will get the site de-indexed |
 | `NEXT_PUBLIC_ALLOW_SAMPLE_FALLBACK` | `false` | See below |
 
 Set `NEXT_PUBLIC_ALLOW_SAMPLE_FALLBACK=false` in production. Left at `true`, an

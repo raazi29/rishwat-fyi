@@ -33,16 +33,28 @@ async function shutdown(signal: NodeJS.Signals): Promise<void> {
   // Safety net: if draining hangs (e.g. a stuck keep-alive socket or a Postgres
   // connection that will not close), force the process to exit rather than
   // hanging forever. Unref'd so it never keeps the loop alive on its own.
+  //
+  // Exits 0, not 1: reaching this timeout during an operator-initiated stop is a
+  // bounded drain, not a crash. Exiting non-zero here would make every normal
+  // redeploy look like a failure to `restartPolicyType: ON_FAILURE`.
   const forceExit = setTimeout(() => {
     console.error(`Shutdown exceeded ${SHUTDOWN_TIMEOUT_MS}ms — forcing exit.`);
-    process.exit(1);
+    process.exit(0);
   }, SHUTDOWN_TIMEOUT_MS);
   forceExit.unref();
 
   try {
     // 1. Stop accepting new connections and wait for in-flight requests to end.
+    //    `server.close()` alone waits for EVERY open connection, including the
+    //    idle keep-alive sockets a platform proxy holds open — those would sit
+    //    there until their own timeout and push every redeploy into the
+    //    force-exit path above. Closing idle sockets explicitly leaves only
+    //    genuinely in-flight requests to drain.
     await new Promise<void>((resolve, reject) => {
       server.close((err) => (err ? reject(err) : resolve()));
+      if ("closeIdleConnections" in server && typeof server.closeIdleConnections === "function") {
+        server.closeIdleConnections();
+      }
     });
     // 2. Drain the Postgres pool (postgres.js: `client.end()` closes all
     //    connections; the timeout bounds how long we wait for in-flight queries).
@@ -60,3 +72,28 @@ async function shutdown(signal: NodeJS.Signals): Promise<void> {
 
 process.on("SIGINT", shutdown);
 process.on("SIGTERM", shutdown);
+
+// Last-resort process guards. Node 20 terminates on an unhandled rejection by
+// default, and an 'error' event on the HTTP server (EADDRINUSE, for instance) is
+// fatal too — in both cases the process would die with no log line explaining
+// why, and the container platform would just report "crashed". Log the cause
+// first, then drain properly so in-flight requests and the Postgres pool are not
+// severed mid-flight.
+//
+// Note both paths still end the process. An uncaught exception leaves the
+// runtime in an undefined state; the goal here is a diagnosable, orderly exit,
+// not carrying on.
+process.on("unhandledRejection", (reason) => {
+  console.error("Unhandled promise rejection — shutting down:", reason);
+  void shutdown("SIGTERM");
+});
+
+process.on("uncaughtException", (err) => {
+  console.error("Uncaught exception — shutting down:", err);
+  void shutdown("SIGTERM");
+});
+
+server.on("error", (err) => {
+  console.error("HTTP server error:", err);
+  process.exit(1);
+});
