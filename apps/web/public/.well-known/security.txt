@@ -1,0 +1,9 @@
+Contact: https://github.com/raazi29/rishwat-fyi/security/policy
+Contact: https://github.com/raazi29/rishwat-fyi/issues
+Expires: 2027-08-24T00:00:00.000Z
+Acknowledgments: https://github.com/raazi29/rishwat-fyi/blob/main/SECURITY.md
+Preferred-Languages: en
+Canonical: https://rishwat.fyi/.well-known/security.txt
+
+# Please do not report non-issues: sample/fixture data is clearly marked as such.
+# See SECURITY.md for the coordinated disclosure process.
