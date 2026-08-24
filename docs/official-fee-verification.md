@@ -105,22 +105,29 @@ The seeded ₹1,200 appears to be an approximation of "total journey for one cla
 
 | Field | Current Seed | Verified | Action |
 |-------|-------------|----------|--------|
-| Fee | ₹600 | ₹600 (LMV/3-wheeler) | ✅ No change |
+| Fee | ₹600 | ₹600 (LMV/3-wheeler new registration) | ✅ No change |
 | Timeline | 7 days | 7 days | ✅ |
 | Source | parivahan.gov.in | CMVR 1989, Rule 81 | ✅ |
 
-**Details:**
-- CMVR 1989, Rule 81 (as confirmed by multiple state transport departments):
+**Verification evidence:**
+- CMVR 1989, Rule 81 — new vehicle registration fees:
   - Invalid carriage: ₹50
   - Motorcycle: ₹300
-  - Three-wheeler / LMV: ₹600
+  - Three-wheeler / LMV (new): **₹600**
   - Medium vehicle: ₹1,000
   - Heavy vehicle: ₹1,500
+- Confirmed by Telangana Transport Dept (transport.telangana.gov.in/html/fees-registration.html)
+- Confirmed by The Hindu (2022): "registration charges for new vehicles would continue to be reasonable at ₹300 for motorcycle, ₹600 for three-wheeler and LMVs"
+- CarVaidya.com comprehensive table lists identical figures
+- **NOTE:** The ₹5,000 figure seen in some sources is the **RENEWAL** fee for vehicles older than 15 years (amended December 2021, implemented from December 1, 2021). New registration remains ₹600.
 - Smart card RC (Form 23A): additional ₹200
-- Road tax is separate and varies heavily by state (not included in fee)
-- **The ₹600 figure is correct for the most common case (car/LMV registration).**
+- Road tax is separate and state-specific (not included in fee)
+- **The ₹600 figure is CONFIRMED CORRECT for new LMV registration.**
 
-**Source URL:** https://parivahan.gov.in + State transport department schedules
+**Source URLs:**
+- https://transport.telangana.gov.in/html/fees-registration.html
+- https://www.carvaidya.com/blog/govt-charges-for-all-rc-related-services
+- Rajasthan: transport.rajasthan.gov.in (shows ₹1,500 for LMV — this appears to be a state-specific amended rate, not the central CMVR rate)
 
 ---
 
@@ -182,17 +189,34 @@ The seeded ₹1,200 appears to be an approximation of "total journey for one cla
 
 | Field | Current Seed | Verified | Action |
 |-------|-------------|----------|--------|
-| Fee | ₹10 | ₹0 (free within 21 days) / ₹10–₹50 (late) | ⚠️ Clarify |
-| Timeline | 21 days | 7–21 days (registration period, not processing time) | ⚠️ Clarify |
-| Source | crsorgi.gov.in | RBD Act 1969 | ✅ |
+| Fee | ₹10 | **FREE** (within 21 days) / ₹10–₹100 (late) | ⚠️ Clarify |
+| Timeline | 21 days | 21 days (registration window, not processing) | ⚠️ Clarify meaning |
+| Source | crsorgi.gov.in | RBD Act 1969, Section 8 + CRS FAQ | ✅ |
 
-**Details:**
-- Under the Registration of Births and Deaths Act, 1969:
-  - Registration within 21 days: **FREE** in most states
-  - Late registration (after 21 days): ₹2–₹5 fee + affidavit
-  - Certificate issuance: ₹10–₹50 depending on state
-- The "21 days" in our seed is the **registration window**, not the processing timeline.
-- **Recommendation:** Change fee to "₹0" (free registration within 21 days) and clarify that ₹10 is the certificate copy fee. Or keep ₹10 as "certificate issuance fee" and note "Registration itself is free within 21 days."
+**Verification evidence (from official CRS FAQ and RBD Act):**
+
+1. **CRS Official FAQ** (dc.crsorgi.gov.in/assets/download/FAQ_of_CRS_Latest.pdf):
+   > "Is there any fee for registration of births and deaths? If event of a birth or death is reported for registration to the prescribed authority within the normal period of 21 days, **no fee would be charged**."
+
+2. **Tamil Nadu CRS FAQ** (crstn.org/birth_death_tn/AboutUs/FAQ.pdf):
+   - Within 21 days: **FREE**
+   - After 21 days but within 30 days: ₹100 late fee
+   - After 30 days but within 1 year: ₹200
+   - After 1 year: ₹500
+
+3. **Vikaspedia** (government portal):
+   > "The birth and death certificates are issued free of charge by the concerned Registrar for events reported within 21 days."
+
+4. **RBD Act 1969, Section 8:** Requires reporting within 21 days. Section 13 prescribes late fees.
+
+5. **IndiaNRI legal guide:** "Every birth must be reported to the Registrar within 21 days, free of charge."
+
+**Key insight:** The ₹10 in our seed is the **certificate extraction fee** (Section 17: "Search and supply of extracts — payment of prescribed fees") charged in some states for obtaining a certified copy AFTER registration. Registration itself is FREE within 21 days. Different states charge ₹10–₹50 for the copy.
+
+**Recommendation:** 
+- Change fee to `"0.00"` with description: "Registration is free within 21 days. A nominal fee of ₹10–₹50 may apply for obtaining a certified copy, depending on the state."
+- Change timeline description: "21 days" refers to the registration window, not processing time.
+- OR keep `"10.00"` but label it explicitly as "certificate issuance fee (registration is free)"
 
 ---
 
@@ -211,14 +235,22 @@ The seeded ₹1,200 appears to be an approximation of "total journey for one cla
 | Field | Current Seed | Verified | Action |
 |-------|-------------|----------|--------|
 | Fee | ₹0 | ₹0 (free for regular taxpayers) | ✅ No change |
-| Timeline | 7 days | 3–7 working days (or deemed approval) | ✅ |
-| Source | gst.gov.in | CGST Act 2017, Section 25 | ✅ |
+| Timeline | 7 days | 7 working days (or deemed approval per Rule 9(5)) | ✅ |
+| Source | gst.gov.in | CGST Act 2017, Section 25 + CGST Rules, Rule 9 | ✅ |
 
-**Details:**
-- Government registration fee: **₹0** (free) for all regular taxpayers
-- Casual/non-resident taxable persons: ₹5,000 advance tax deposit (not a "fee")
-- Timeline: 3 working days if Aadhaar authenticated; 7 days otherwise; 30 days max with show-cause
-- **Correctly seeded.**
+**Verification evidence:**
+
+1. **CGST Rules 2017, Rule 9(1):** "Registration must be granted within **7 working days** from the date of application submission."
+
+2. **Rule 9(5) — Deemed approval:** "If the proper officer fails to take any action within the said 7/30/7 days, the application for the grant of registration shall be **deemed to have been approved**."
+
+3. **Multiple authoritative sources confirm:** "There is no fee charged for GST registration in India" (IndiaFilings, fi.money, VakilSearch, BajajFinServ — all consistent).
+
+4. **Exception:** Casual taxable persons / non-resident taxable persons pay ₹5,000 as advance tax deposit (not a registration "fee" per se — it's an advance against future liability).
+
+5. **Newer development (2025):** Auto-approval within 3 days for low-risk businesses under ₹25 lakh B2B output tax (caclubindia.com).
+
+**Correctly seeded. No change needed.**
 
 ---
 
@@ -275,12 +307,19 @@ The seeded ₹1,200 appears to be an approximation of "total journey for one cla
 |-------|-------------|----------|--------|
 | Fee | ₹0 | ₹0 (free) | ✅ No change |
 | Timeline | 30 days | 15–30 days | ✅ |
-| Source | nfsa.gov.in | NFSA 2013 | ✅ |
+| Source | nfsa.gov.in | NFSA 2013, Section 10 | ✅ |
 
-**Details:**
-- Under NFSA 2013, ration card issuance is **free**.
-- Some states charge ₹5–₹25 for the physical card, but the entitlement/registration is free.
-- **Correctly seeded.**
+**Verification evidence:**
+
+1. **NFSA 2013, Section 10(1a/1b):** Requires state governments to identify eligible households and issue ration cards. No fee is prescribed in the Act for issuance.
+
+2. **Wikipedia (citing official government sources):** "Under the NFSA, all state governments have to identify households eligible to receive subsidised food grain and provide them with ration cards." — no mention of any fee.
+
+3. **nfsa.gov.in Salient Features page:** Confirms states issue ration cards under the Act. No fee structure mentioned.
+
+4. **Practical reality:** Some states charge ₹5–₹25 for the physical card material, but the registration/entitlement itself is free. This is analogous to the birth certificate situation (registration free, copy may have nominal charge).
+
+**Correctly seeded. No change needed.**
 
 ---
 
@@ -364,8 +403,8 @@ The seeded ₹1,200 appears to be an approximation of "total journey for one cla
 - Passport (₹2,500 nationwide — MEA sets the fee)
 
 ### Services with MINOR state variation (central base + state surcharge):
-- Driving Licence (base ₹500, states add ₹50–₹300)
-- Vehicle Registration (base ₹600 for LMV, same nationwide per CMVR)
+- Driving Licence (base ₹900 total journey, states add ₹50–₹300)
+- Vehicle Registration (base ₹600 for LMV per CMVR — **BUT** Rajasthan shows ₹1,500; this may be a state amendment. Needs per-state confirmation before showing state-specific fees.)
 - Police Verification/PCC (₹750 for PCC nationwide — MEA)
 
 ### Services with MAJOR state variation (state sets the fee):
