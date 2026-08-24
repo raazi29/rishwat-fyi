@@ -15,22 +15,23 @@ export function SearchTopBar({
   location: string;
 }) {
   return (
-    <div className="grid gap-3 lg:grid-cols-[1fr_auto]">
-      <SearchField
-        size="bar"
-        defaultQuery={query}
-        defaultLocation={location}
-        queryPlaceholder="Service or department"
-        locationPlaceholder="City, district or state"
-      />
-      <div className="flex items-center gap-3 rounded-md border border-line bg-surface px-4 py-2.5 lg:max-w-xs">
+    <div className="flex flex-col gap-3 lg:flex-row lg:items-stretch">
+      <div className="min-w-0 flex-1">
+        <SearchField
+          size="bar"
+          defaultQuery={query}
+          defaultLocation={location}
+          queryPlaceholder="Service or department"
+          locationPlaceholder="City, district or state"
+        />
+      </div>
+      <div className="hidden items-center gap-2.5 rounded-lg border border-line bg-surface px-3 py-2 lg:flex lg:shrink-0">
         <span aria-hidden="true" className="shrink-0 text-official-mid">
-          <ShieldCheckIcon size={22} />
+          <ShieldCheckIcon size={18} />
         </span>
-        <div>
-          <p className="text-label font-semibold text-ink">All reports are anonymous</p>
-          <p className="text-label text-ink-muted">We never collect personal information.</p>
-        </div>
+        <p className="text-label text-ink-secondary">
+          <span className="font-medium text-ink">Anonymous</span> · No personal data collected
+        </p>
       </div>
     </div>
   );

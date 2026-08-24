@@ -88,11 +88,11 @@ export function SearchFilters({
   ];
 
   return (
-    <form method="get" action="/search" className="flex flex-col gap-6" aria-label="Refine search">
+    <form method="get" action="/search" className="flex flex-col gap-5" aria-label="Refine search">
       {/* Preserve the current query term across a filter submit. */}
       <input type="hidden" name="q" value={q} />
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between border-b border-line-inner pb-3">
         <h2 className="font-sans text-h3 font-semibold text-ink">Refine your search</h2>
         <ActionLink href="/search" aria-label="Clear all filters">
           Clear all
@@ -115,7 +115,6 @@ export function SearchFilters({
       <Field
         label="Service type"
         htmlFor={`${formId}-service-type`}
-        hint="Every service of the selected department is shown."
       >
         <FormSelect
           variant="select"

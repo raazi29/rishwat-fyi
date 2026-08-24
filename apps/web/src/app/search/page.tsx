@@ -221,7 +221,7 @@ export default async function SearchPage({
               />
             ) : (
               <>
-                <ComparisonTable rows={rows} />
+                <ComparisonTable rows={rows} filteredLocation={location || undefined} />
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <ResultCount page={read.page} perPage={PER_PAGE} total={total} unit="service" />
                   <Pagination
@@ -240,7 +240,7 @@ export default async function SearchPage({
           </div>
 
           <aside className="hidden lg:col-start-1 lg:row-start-1 lg:block">
-            <div className="sticky top-20">
+            <div className="sticky top-20 rounded-lg border border-line bg-surface p-4">
               <SearchFilters {...filtersProps} formId="rail" />
             </div>
           </aside>

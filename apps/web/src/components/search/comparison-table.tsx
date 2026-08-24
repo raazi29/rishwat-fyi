@@ -65,23 +65,24 @@ function serviceHref(row: ComparisonRow): string {
   return query ? `/services/${row.slug}?${query}` : `/services/${row.slug}`;
 }
 
-function locationLabel(row: ComparisonRow): string {
+function locationLabel(row: ComparisonRow, fallback?: string): string {
   const parts = [row.location.district, row.location.state].filter(
     (part): part is string => Boolean(part),
   );
-  return parts.length > 0 ? parts.join(", ") : "All India";
+  if (parts.length > 0) return parts.join(", ");
+  return fallback || "All India";
 }
 
 function reportedTimeline(row: ComparisonRow): string {
   return formatDays(row.reported.timeline_days);
 }
 
-export function ComparisonTable({ rows }: { rows: ComparisonRow[] }) {
+export function ComparisonTable({ rows, filteredLocation }: { rows: ComparisonRow[]; filteredLocation?: string }) {
   return (
     <TableShell
       ariaLabel="Official figures compared with citizen-reported experience"
       caption="Each row compares a service's official fee, timeline and documents with the citizen-reported additional amount, timeline and visits."
-      cards={<ComparisonCards rows={rows} />}
+      cards={<ComparisonCards rows={rows} filteredLocation={filteredLocation} />}
     >
       <THead>
         <tr>
@@ -139,7 +140,7 @@ export function ComparisonTable({ rows }: { rows: ComparisonRow[] }) {
                   </div>
                 </div>
               </Td>
-              <Td className="text-ink-secondary">{locationLabel(row)}</Td>
+              <Td className="text-ink-secondary">{locationLabel(row, filteredLocation)}</Td>
               <NumericTd>{formatInr(row.official.fee_inr)}</NumericTd>
               <NumericTd>{formatDays(row.official.timeline_days)}</NumericTd>
               <NumericTd>{row.official.documents ?? "—"}</NumericTd>
@@ -188,7 +189,7 @@ function CardFigure({
   );
 }
 
-function ComparisonCards({ rows }: { rows: ComparisonRow[] }) {
+function ComparisonCards({ rows, filteredLocation }: { rows: ComparisonRow[]; filteredLocation?: string }) {
   return (
     <ul className="flex flex-col gap-4">
       {rows.map((row) => {
@@ -208,7 +209,7 @@ function ComparisonCards({ rows }: { rows: ComparisonRow[] }) {
                   {row.name}
                 </Link>
                 <p className="text-label text-ink-muted">
-                  {row.department} · {locationLabel(row)}
+                  {row.department} · {locationLabel(row, filteredLocation)}
                 </p>
               </div>
             </div>
