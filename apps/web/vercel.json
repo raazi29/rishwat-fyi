@@ -1,6 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
+  "installCommand": "cd ../.. && npm install --workspace apps/web --workspace apps/api --workspace packages/database --workspace packages/validation --include-workspace-root",
   "buildCommand": "next build",
   "outputDirectory": ".next"
 }
