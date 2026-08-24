@@ -59,10 +59,12 @@ function ActionCard({
     <Link
       href={href}
       className={cn(
-        "group flex items-center gap-3 rounded-lg border border-line bg-surface p-4",
-        "shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-all duration-150",
-        "hover:border-official-mid hover:bg-sunken hover:shadow-[0_3px_8px_rgba(0,0,0,0.06)] active:translate-y-px active:shadow-sm",
-        "focus-visible:bg-sunken",
+        "group flex items-center gap-3 rounded-[10px] border border-line/80 bg-surface p-4",
+        "shadow-[0_1px_3px_rgba(0,0,0,0.03),0_0px_0px_1px_rgba(0,0,0,0.02)]",
+        "transition-all duration-200 ease-[cubic-bezier(0.4,0,0.2,1)]",
+        "hover:border-official-mid/50 hover:bg-sunken/60 hover:shadow-[0_4px_12px_-4px_rgba(0,0,0,0.08)]",
+        "active:translate-y-[1px] active:shadow-sm",
+        "focus-visible:shadow-[0_0px_0px_3px_rgba(15,61,38,0.1)]",
       )}
     >
       <IconTile tone="sand">{icon}</IconTile>

@@ -7,29 +7,70 @@ export type ButtonVariant = "primary" | "secondary" | "quiet" | "ghost";
 export type ButtonSize = "sm" | "md" | "lg";
 
 /**
- * The public-record control language: a compact 12px radius, a clearly official
- * green primary action with a subtle inner highlight, and restrained press
- * feedback. The primary button has a gentle shadow that lifts on hover;
- * secondary uses a refined border with a hair-shadow. Cards own heavy borders;
- * controls use colour, subtle depth, and a one-pixel press.
+ * Premium button system.
+ *
+ * Design philosophy (researched from Linear, Vercel, Stripe, Raycast):
+ *
+ * 1. DEPTH: Primary uses a gradient background (not flat) with a bright top-edge
+ *    highlight simulating light hitting the surface — makes it feel like a
+ *    physical object you can press.
+ * 2. MOTION: `duration-200` with an `ease-[cubic-bezier(0.4,0,0.2,1)]` for
+ *    natural deceleration. The press moves 1px (not 2) — subtle, not bouncy.
+ * 3. SHADOW LAYERS: Two-layer shadow — a tight near-shadow for definition, a
+ *    broader ambient for depth. On hover the ambient grows; on press both
+ *    collapse. This simulates raising the button toward you and pressing it in.
+ * 4. BORDER: Secondary uses a 1px border that's slightly darker on hover,
+ *    with a barely-visible outer glow (ring) replacing heavy shadow.
+ * 5. FOCUS: A green ring offset 2px — accessibility without distraction.
  */
 const BASE =
-  "inline-flex select-none items-center justify-center gap-2 rounded-xl font-semibold transition-all duration-150 ease-out disabled:cursor-not-allowed disabled:opacity-50 disabled:transform-none disabled:shadow-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50";
+  "inline-flex select-none items-center justify-center gap-2 rounded-[10px] font-semibold tracking-[-0.01em] transition-all duration-200 ease-[cubic-bezier(0.4,0,0.2,1)] disabled:cursor-not-allowed disabled:opacity-40 disabled:transform-none disabled:shadow-none disabled:pointer-events-none aria-disabled:cursor-not-allowed aria-disabled:opacity-40";
 
 const VARIANTS: Record<ButtonVariant, string> = {
-  primary:
-    "bg-official text-ink-inverse shadow-[0_1px_2px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.08)] hover:bg-official-deep hover:shadow-[0_2px_6px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.1)] active:translate-y-px active:shadow-[0_0px_1px_rgba(0,0,0,0.1)]",
-  secondary:
-    "border border-line bg-surface text-ink shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:border-official-mid hover:bg-sunken hover:shadow-[0_2px_4px_rgba(0,0,0,0.06)] active:translate-y-px active:shadow-none",
-  quiet:
-    "text-official-mid underline decoration-transparent decoration-[1.5px] underline-offset-4 hover:text-official-deep hover:decoration-current active:translate-y-px",
-  ghost: "text-ink-secondary hover:bg-sunken hover:text-ink active:translate-y-px",
+  primary: [
+    // Gradient: subtle top-to-bottom creates a lit surface
+    "bg-gradient-to-b from-[color-mix(in_srgb,var(--color-official)_100%,white_8%)] to-official",
+    "text-ink-inverse",
+    // Two-layer shadow: tight edge + soft ambient
+    "shadow-[0_1px_2px_rgba(0,0,0,0.2),0_0px_0px_1px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.12)]",
+    // Hover: deeper ambient, brighter gradient top
+    "hover:from-[color-mix(in_srgb,var(--color-official)_100%,white_12%)] hover:to-official-deep",
+    "hover:shadow-[0_3px_8px_-2px_rgba(0,0,0,0.25),0_0px_0px_1px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.14)]",
+    // Press: flatten shadow, push 1px — tactile
+    "active:translate-y-[1px] active:shadow-[0_0px_1px_rgba(0,0,0,0.15),0_0px_0px_1px_rgba(0,0,0,0.08),inset_0_1px_2px_rgba(0,0,0,0.1)]",
+    "active:from-official active:to-official",
+  ].join(" "),
+
+  secondary: [
+    "border border-line/80 bg-surface text-ink",
+    // Subtle outer glow instead of a heavy shadow
+    "shadow-[0_1px_2px_rgba(0,0,0,0.03),0_0px_0px_1px_rgba(0,0,0,0.02)]",
+    "ring-1 ring-transparent",
+    // Hover: border darkens, faint green glow
+    "hover:border-official-mid/50 hover:bg-sunken/60",
+    "hover:shadow-[0_2px_4px_rgba(0,0,0,0.05),0_0px_0px_1px_rgba(15,61,38,0.08)]",
+    // Press
+    "active:translate-y-[1px] active:shadow-none active:bg-sunken",
+  ].join(" "),
+
+  quiet: [
+    "text-official-mid",
+    "underline decoration-transparent decoration-[1.5px] underline-offset-[5px]",
+    "hover:text-official-deep hover:decoration-official-mid/40",
+    "active:translate-y-[0.5px]",
+  ].join(" "),
+
+  ghost: [
+    "text-ink-secondary",
+    "hover:bg-sunken hover:text-ink",
+    "active:translate-y-[0.5px] active:bg-sunken",
+  ].join(" "),
 };
 
 const SIZES: Record<ButtonSize, string> = {
-  sm: "min-h-9 px-4 text-label tracking-[-0.01em] pointer-coarse:min-h-11",
-  md: "min-h-11 px-5 text-label tracking-[-0.01em]",
-  lg: "min-h-[52px] px-7 text-body tracking-[-0.01em]",
+  sm: "min-h-9 px-3.5 text-[13px] leading-none pointer-coarse:min-h-11",
+  md: "min-h-11 px-[18px] text-[13.5px] leading-none",
+  lg: "min-h-[52px] px-7 text-[15px] leading-none",
 };
 
 interface CommonProps {

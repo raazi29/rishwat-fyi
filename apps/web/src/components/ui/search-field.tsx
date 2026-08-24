@@ -44,8 +44,10 @@ export function SearchField({
       role="search"
       aria-label="Search government services"
       className={cn(
-        "flex rounded-2xl border border-line bg-surface shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-all duration-150",
-        "hover:border-official-mid hover:shadow-[0_2px_6px_rgba(0,0,0,0.06)] focus-within:border-official-mid focus-within:shadow-[0_2px_8px_rgba(0,0,0,0.08)] focus-within:ring-2 focus-within:ring-official-mid/20",
+        "flex rounded-2xl border border-line/80 bg-surface transition-all duration-200 ease-[cubic-bezier(0.4,0,0.2,1)]",
+        "shadow-[0_1px_3px_rgba(0,0,0,0.03),0_0px_0px_1px_rgba(0,0,0,0.02)]",
+        "hover:border-official-mid/40 hover:shadow-[0_2px_6px_rgba(0,0,0,0.05)]",
+        "focus-within:border-official-mid/60 focus-within:shadow-[0_0px_0px_3px_rgba(15,61,38,0.08)]",
         isBar
           ? "flex-col items-stretch sm:h-[52px] sm:flex-row sm:items-stretch"
           : "h-13 items-stretch sm:h-14",
@@ -88,10 +90,13 @@ export function SearchField({
       <button
         type="submit"
         className={cn(
-          "m-1 inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl bg-official font-semibold text-ink-inverse",
-          "shadow-[0_1px_2px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.08)]",
-          "transition-all duration-150 hover:bg-official-deep hover:shadow-[0_2px_6px_rgba(0,0,0,0.18)] active:translate-y-px active:shadow-sm",
-          isBar ? "px-5 text-label" : "px-5 text-label sm:px-6 sm:text-body",
+          "m-1 inline-flex min-h-11 shrink-0 items-center justify-center rounded-[10px] font-semibold text-ink-inverse",
+          "bg-gradient-to-b from-[color-mix(in_srgb,var(--color-official)_100%,white_8%)] to-official",
+          "shadow-[0_1px_2px_rgba(0,0,0,0.2),0_0px_0px_1px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.12)]",
+          "transition-all duration-200 ease-[cubic-bezier(0.4,0,0.2,1)]",
+          "hover:from-[color-mix(in_srgb,var(--color-official)_100%,white_12%)] hover:to-official-deep hover:shadow-[0_3px_8px_-2px_rgba(0,0,0,0.25),0_0px_0px_1px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.14)]",
+          "active:translate-y-[1px] active:shadow-[0_0px_1px_rgba(0,0,0,0.15),inset_0_1px_2px_rgba(0,0,0,0.1)]",
+          isBar ? "px-5 text-[13.5px]" : "px-5 text-[13.5px] sm:px-6 sm:text-[15px]",
         )}
       >
         {buttonLabel}
