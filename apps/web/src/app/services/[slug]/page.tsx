@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { Container, PageHeader } from "@/components/layout/container";
 import { SampleDataStrip, Tabs, type Crumb, type TabItem } from "@/components/ui";
 import { ShieldCheckIcon, UsersIcon } from "@/components/icons";
-import { getServiceDetail, listDepartments } from "@/lib/api";
+import { getDatasetGeneratedAt, getServiceDetail, listDepartments } from "@/lib/api";
 import { formatCount, formatDate, formatDays, formatInr } from "@/lib/utils/format";
 import {
   BreadcrumbJsonLd,
@@ -109,7 +109,10 @@ export default async function ServiceDetailPage({
   const verification = deriveVerification(citizen);
   const insights = getServiceInsights(slug);
 
-  const departments = await listDepartments();
+  const [departments, lastUpdated] = await Promise.all([
+    listDepartments(),
+    getDatasetGeneratedAt(),
+  ]);
   const departmentSlug = departments.data.find((entry) => entry.name === service.department)?.slug;
 
   const locationLabel = [districtName, stateName].filter(Boolean).join(", ");
@@ -214,6 +217,7 @@ export default async function ServiceDetailPage({
             citizen={citizen}
             verification={verification}
             notice={notice}
+            lastUpdated={lastUpdated}
             insights={insights.data}
           />
         ) : null}

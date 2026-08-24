@@ -40,6 +40,23 @@ export function getDatasetIndex(): Promise<Sourced<DatasetIndex>> {
   );
 }
 
+/**
+ * When the public dataset was last generated, read from the `/datasets` index
+ * (`generated_at`). The aggregate pages show this beside the mandatory notice
+ * so a reader can see how fresh the medians and counts are.
+ *
+ * Supplementary and never load-bearing: a missing field or an unreachable index
+ * returns `null` — the freshness line simply does not render — instead of
+ * throwing. It also refuses to present a fallback time as live: only a
+ * successful API read yields a value, so sample-data pages show no timestamp.
+ */
+export async function getDatasetGeneratedAt(): Promise<string | null> {
+  const result = await apiFetch<DatasetIndex>("/datasets", { revalidate: 300 });
+  return result.ok && typeof result.data.generated_at === "string"
+    ? result.data.generated_at
+    : null;
+}
+
 /** One downloadable file: a dataset paired with one of its serialisations. */
 export interface DatasetDownload {
   name: string;

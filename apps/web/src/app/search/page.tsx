@@ -4,6 +4,7 @@ import Image from "next/image";
 import { Container } from "@/components/layout/container";
 import {
   ButtonLink,
+  DataFreshness,
   EmptyState,
   NoticeStrip,
   Pagination,
@@ -12,6 +13,7 @@ import {
 } from "@/components/ui";
 import {
   getComparisonRows,
+  getDatasetGeneratedAt,
   listDepartments,
   searchServices,
   type ServiceSearchParams,
@@ -117,9 +119,10 @@ export default async function SearchPage({
     per_page: PER_PAGE,
   };
 
-  const [searchResult, rowsSourced] = await Promise.all([
+  const [searchResult, rowsSourced, lastUpdated] = await Promise.all([
     searchServices(apiParams),
     getComparisonRows(apiParams),
+    getDatasetGeneratedAt(),
   ]);
 
   const total = searchResult.data.total;
@@ -228,7 +231,10 @@ export default async function SearchPage({
                     searchParams={paginationParams}
                   />
                 </div>
-                <NoticeStrip notice="Numbers are medians unless stated otherwise. Official information may change. Always verify on the official portal." />
+                <div className="space-y-2">
+                  <NoticeStrip notice="Numbers are medians unless stated otherwise. Official information may change. Always verify on the official portal." />
+                  <DataFreshness updatedAt={lastUpdated} />
+                </div>
               </>
             )}
           </div>

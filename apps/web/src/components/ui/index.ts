@@ -79,6 +79,9 @@ export type { StepItem } from "./steps";
 export { Callout, NoticeStrip, SampleDataStrip, MANDATORY_NOTICE } from "./callout";
 export type { CalloutTone } from "./callout";
 
+// Data freshness
+export { DataFreshness } from "./data-freshness";
+
 // Loading / empty / error
 export { Skeleton, EmptyState, ThresholdEmptyState, ErrorState } from "./feedback";
 

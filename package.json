@@ -1,7 +1,10 @@
 {
   "name": "rishwat-fyi",
   "private": true,
-  "workspaces": ["apps/*", "packages/*"],
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "dev": "npm run dev -w apps/api",
     "dev:web": "npm run dev -w apps/web",
@@ -13,9 +16,12 @@
     "db:migrate": "bash scripts/db-migrate.sh",
     "db:seed": "bash scripts/db-seed.sh",
     "smoke-test": "node scripts/smoke-test.mjs",
-    "create-admin": "npm run create-admin -w apps/api"
+    "create-admin": "npm run create-admin -w apps/api",
+    "e2e": "npx playwright test"
   },
-  "engines": { "node": ">=20.6" },
+  "engines": {
+    "node": ">=20.6"
+  },
   "overrides": {
     "postcss": "^8.5.24",
     "sharp": "^0.35.0",
@@ -23,5 +29,8 @@
       "postcss": "^8.5.24",
       "sharp": "^0.35.0"
     }
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.1"
   }
 }

@@ -8,12 +8,14 @@
     "start": "next start --port 3000",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
     "map:build": "node scripts/build-india-map.mjs"
   },
   "dependencies": {
     "@rishwat/api": "*",
     "@rishwat/database": "*",
     "@rishwat/validation": "*",
+    "@sentry/nextjs": "^8.55.2",
     "next": "^16.3.2",
     "react": "19.1.9",
     "react-dom": "19.1.9",

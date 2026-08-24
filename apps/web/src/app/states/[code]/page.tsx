@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { Container, PageHeader } from "@/components/layout/container";
 import {
+  DataFreshness,
   NoticeStrip,
   Panel,
   SampleDataStrip,
@@ -13,7 +14,7 @@ import {
   type StatItem,
 } from "@/components/ui";
 import { CompassIcon, MapPinIcon, RupeeIcon, UsersIcon } from "@/components/icons";
-import { getStateDetail } from "@/lib/api";
+import { getDatasetGeneratedAt, getStateDetail } from "@/lib/api";
 import { formatCount, formatInr } from "@/lib/utils/format";
 import { DistrictList, NotEnoughData, StateServiceTable } from "@/components/geo";
 import { BreadcrumbJsonLd, CollectionPageJsonLd, FaqJsonLd } from "@/components/seo/json-ld";
@@ -45,6 +46,7 @@ export default async function StateDetailPage({ params }: { params: Params }) {
   const detail = await getStateDetail(code);
   if (!detail) notFound();
 
+  const lastUpdated = await getDatasetGeneratedAt();
   const { state, gap, districts, top_services } = detail.data;
   const median = gap.additional_amount_median;
   const publishable = median !== null;
@@ -157,7 +159,10 @@ export default async function StateDetailPage({ params }: { params: Params }) {
           <DistrictList districts={districts} stateName={state.name} stateCode={state.code} />
         </section>
 
-        <NoticeStrip />
+        <div className="space-y-2">
+          <NoticeStrip />
+          <DataFreshness updatedAt={lastUpdated} />
+        </div>
       </div>
       </Container>
     </>

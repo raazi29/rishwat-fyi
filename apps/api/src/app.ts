@@ -9,6 +9,7 @@ import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { loadConfig, type AppConfig } from "./config.js";
 import type { AppEnv } from "./env.js";
 import { AppError } from "./errors.js";
+import { captureException } from "./lib/sentry.js";
 import { requireAuth, requireRole } from "./middleware/auth.js";
 import { openapi } from "./openapi.js";
 import { adminAuth } from "./routes/admin/auth.js";
@@ -172,13 +173,10 @@ export function createApp(
       message: redactSecrets(e.message ?? String(err)),
       stack: e.stack,
     });
-    // TODO(sentry): report this unexpected error once Sentry is enabled. Only
-    // unhandled errors reach this branch — AppError and HTTPException above are
-    // expected control flow and must NOT be captured. After installing
-    // @sentry/node and wiring up ./lib/sentry.ts (see its header), do e.g.:
-    //   import { SENTRY_ENABLED } from "./lib/sentry.js";
-    //   import * as Sentry from "@sentry/node";
-    //   if (SENTRY_ENABLED) Sentry.captureException(err);
+    // Report to Sentry (a no-op when SENTRY_DSN is unset). Only unhandled errors
+    // reach this branch — AppError and HTTPException above are expected control
+    // flow and are intentionally never captured.
+    captureException(err);
     return c.json(
       { error: { code: "internal_error", message: "Internal server error" } },
       500,

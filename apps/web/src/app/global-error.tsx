@@ -2,6 +2,8 @@
 
 import { useEffect, useState, type CSSProperties } from "react";
 
+import { captureException } from "@/lib/sentry";
+
 import "./globals.css";
 
 /**
@@ -31,6 +33,10 @@ export default function GlobalError({
   useEffect(() => {
     // Surfaced to the operator's console/log pipeline, never to the reader.
     console.error("Unhandled application error", error);
+    // A root-layout failure lands here, not in app/error.tsx, so this boundary
+    // is the only place that can report it. No-op unless NEXT_PUBLIC_SENTRY_DSN
+    // is set.
+    captureException(error);
   }, [error]);
 
   useEffect(() => {

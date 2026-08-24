@@ -1,5 +1,5 @@
 import type { CitizenAggregate, ServiceDetail } from "@/lib/api";
-import { Callout, Card, NoticeStrip, Panel, ThresholdEmptyState } from "@/components/ui";
+import { Callout, Card, DataFreshness, NoticeStrip, Panel, ThresholdEmptyState } from "@/components/ui";
 import { IssueBars } from "@/components/charts";
 import {
   formatDays,
@@ -31,12 +31,14 @@ export function OverviewTab({
   citizen,
   verification,
   notice,
+  lastUpdated,
   insights,
 }: {
   service: ServiceDetail;
   citizen: CitizenAggregate;
   verification: DerivedVerification;
   notice: string;
+  lastUpdated: string | null;
   insights: ServiceInsights;
 }) {
   const published = citizen.published;
@@ -89,7 +91,10 @@ export function OverviewTab({
         <VerificationPanel citizen={citizen} verification={verification} />
       </div>
 
-      <NoticeStrip notice={notice} />
+      <div className="space-y-2">
+        <NoticeStrip notice={notice} />
+        <DataFreshness updatedAt={lastUpdated} />
+      </div>
 
       {hasInsights ? (
         <div className="space-y-6">

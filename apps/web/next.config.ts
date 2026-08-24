@@ -1,3 +1,4 @@
+import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
 
 // Fail a real production deploy that is missing the API origin, rather than
@@ -134,4 +135,20 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// Sentry build-time integration: uploads source maps, injects the
+// client/server/edge configs, and proxies events through /monitoring
+// (tunnelRoute) so they leave the browser as same-origin requests — which is
+// why no Sentry host needs adding to the CSP connect-src above.
+const sentryConfig = {
+  silent: true,
+  disableLogger: true,
+  hideSourceMaps: true,
+  tunnelRoute: "/monitoring",
+};
+
+// Wrap only when a DSN is configured. Without it withSentryConfig is skipped
+// entirely, so CI and local `next build` — which have no DSN and no Sentry auth
+// token for source-map upload — build exactly as before.
+export default process.env.NEXT_PUBLIC_SENTRY_DSN
+  ? withSentryConfig(nextConfig, sentryConfig)
+  : nextConfig;
