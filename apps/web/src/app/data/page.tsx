@@ -4,7 +4,7 @@ import Image from "next/image";
 import { ActionLink, ButtonLink, NoticeStrip, SampleDataStrip } from "@/components/ui";
 import { DownloadIcon, EyeOffIcon } from "@/components/icons";
 import { CodeBlock, DocLayout, DocSection, Prose, ThresholdCallout, type TableOfContentsItem } from "@/components/doc";
-import { datasetDownloadUrl, getDatasetIndex } from "@/lib/api";
+import { datasetDownloads, getDatasetIndex } from "@/lib/api";
 import { formatDateTime } from "@/lib/utils/format";
 
 // Request-time rendering: content comes from the API, a separate deployment
@@ -28,8 +28,9 @@ const TOC: TableOfContentsItem[] = [
 
 export default async function DataPage() {
   const index = await getDatasetIndex();
-  const { datasets, generated_at, license, notice } = index.data;
-  const formats = datasets.map((entry) => entry.format.toUpperCase()).join(" · ");
+  const { generated_at, license } = index.data;
+  const downloads = datasetDownloads(index.data);
+  const formats = downloads.map((entry) => entry.format.toUpperCase()).join(" · ");
 
   const citation = `Rishwat.fyi — citizen-reported government-service experiences (reports dataset). Snapshot generated ${formatDateTime(generated_at)}. Licensed under CC BY 4.0.`;
 
@@ -97,10 +98,10 @@ export default async function DataPage() {
               </dl>
             </div>
             <div className="flex shrink-0 flex-wrap gap-3">
-              {datasets.map((entry) => (
+              {downloads.map((entry) => (
                 <ButtonLink
                   key={`${entry.name}-${entry.format}`}
-                  href={datasetDownloadUrl(entry.name, entry.format)}
+                  href={entry.url}
                   external
                   variant={entry.format === "csv" ? "primary" : "secondary"}
                   iconLeading={<DownloadIcon size={18} />}
@@ -117,7 +118,7 @@ export default async function DataPage() {
           </div>
         </div>
 
-        <NoticeStrip notice={notice} className="mt-5" />
+        <NoticeStrip className="mt-5" />
         <ThresholdCallout className="mt-4" />
       </DocSection>
 

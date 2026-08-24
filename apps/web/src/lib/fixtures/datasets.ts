@@ -7,14 +7,18 @@
  */
 
 import type { DatasetIndex } from "@/lib/api/types";
-import { CITIZEN_REPORT_NOTICE } from "./aggregates";
 
 export const sampleDatasetIndex: DatasetIndex = {
   datasets: [
-    { name: "reports", format: "csv", url: "/datasets/reports.csv" },
-    { name: "reports", format: "json", url: "/datasets/reports.json" },
+    {
+      name: "reports",
+      description: "Publishable citizen reports, PII-redacted.",
+      formats: {
+        csv: "/datasets/reports.csv",
+        json: "/datasets/reports.json",
+      },
+    },
   ],
   generated_at: "2026-08-20T00:00:00.000Z",
   license: "Data: CC BY 4.0 (see LICENSE-DATA). Code: MIT (see LICENSE).",
-  notice: CITIZEN_REPORT_NOTICE,
 };

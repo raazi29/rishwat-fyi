@@ -55,9 +55,149 @@ export function getReportStatus(
 /** Public report view. `null` on a real 404. */
 export function getPublicReport(publicId: string): Promise<Sourced<PublicReport> | null> {
   return withSampleUnlessMissing(
-    () => apiFetch<PublicReport>(`/reports/${encodeURIComponent(publicId)}`, { revalidate: 0 }),
+    async (): Promise<ApiResult<PublicReport>> => {
+      const raw = await apiFetch<unknown>(`/reports/${encodeURIComponent(publicId)}`, { revalidate: 0 });
+      if (!raw.ok) return raw as ApiResult<PublicReport>;
+      const normalized = normalizePublicReport(raw.data);
+      if (!normalized) {
+        return {
+          ok: false,
+          error: { code: "invalid_response", message: `Report "${publicId}" returned an unexpected shape.` },
+        };
+      }
+      return { ok: true, data: normalized };
+    },
     () => findPublicReport(publicId),
   );
+}
+
+function normalizeEvidenceMeta(raw: unknown): EvidenceMeta | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  const id = typeof r.id === "string" ? r.id : null;
+  const mime_type = typeof r.mime_type === "string" ? r.mime_type : typeof r.mimeType === "string" ? (r.mimeType as string) : null;
+  const size_bytes = typeof r.size_bytes === "number" ? r.size_bytes : typeof r.sizeBytes === "number" ? (r.sizeBytes as number) : null;
+  const status = typeof r.status === "string" ? r.status : "accepted";
+  // live API may return `retention_until` or `uploaded_at`+`sha256`; fixtures use `retention_until`
+  const retention_until =
+    typeof r.retention_until === "string"
+      ? r.retention_until
+      : typeof r.uploaded_at === "string"
+        ? new Date(new Date(r.uploaded_at as string).getTime() + 90 * 24 * 3600 * 1000).toISOString()
+        : new Date(Date.now() + 90 * 24 * 3600 * 1000).toISOString();
+  if (!id || !mime_type || size_bytes === null) return null;
+  return {
+    id,
+    status: status as EvidenceMeta["status"],
+    mime_type,
+    size_bytes,
+    retention_until,
+  };
+}
+
+/**
+ * Adapt the live API's nested `GET /reports/:publicId` shape to the web's flat
+ * `PublicReport` view model. Handles BOTH shapes defensively so pages never
+ * crash regardless of which backend is deployed.
+ *
+ * Live (per apps/api/src/routes/reports.ts):
+ *   { public_id, status, service:{slug,name}, location:{state,district}, period:{start,end}, experience:{...}, description, evidence:[], created_at }
+ * Web (fixtures + PublicReportView):
+ *   { public_id, status, service, state, district, period_start, period_end, official_fee_reported_inr..., paid, delay_days, visits, description, evidence, submitted_at, status_changed_at }
+ */
+function normalizePublicReport(raw: unknown): PublicReport | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+
+  // Already flat web shape? (fixture)
+  if ("period_start" in r && "state" in r && "service" in r && typeof r.service === "object") {
+    const maybe = raw as PublicReport;
+    if (typeof maybe.public_id === "string" && typeof maybe.service?.slug === "string") {
+      const ev = Array.isArray(maybe.evidence) ? maybe.evidence : [];
+      return { ...maybe, evidence: ev.filter((e) => !!e && typeof e.id === "string") };
+    }
+  }
+
+  // Live nested shape
+  const public_id = typeof r.public_id === "string" ? r.public_id : "";
+  const status = typeof r.status === "string" ? r.status : "submitted";
+  if (!public_id) return null;
+
+  const serviceRaw = r.service as Record<string, unknown> | undefined;
+  const service =
+    serviceRaw && typeof serviceRaw.slug === "string" && typeof serviceRaw.name === "string"
+      ? { slug: serviceRaw.slug as string, name: serviceRaw.name as string }
+      : null;
+  if (!service) return null;
+
+  const locationRaw = r.location as Record<string, unknown> | undefined;
+  const state = typeof locationRaw?.state === "string" ? (locationRaw.state as string) : typeof r.state === "string" ? (r.state as string) : "";
+  const district = typeof locationRaw?.district === "string" ? (locationRaw.district as string) : typeof r.district === "string" ? (r.district as string) : "";
+
+  const periodRaw = r.period as Record<string, unknown> | undefined;
+  const period_start =
+    typeof periodRaw?.start === "string"
+      ? (periodRaw.start as string)
+      : typeof r.period_start === "string"
+        ? (r.period_start as string)
+        : "";
+  const period_end =
+    typeof periodRaw?.end === "string"
+      ? (periodRaw.end as string)
+      : typeof r.period_end === "string"
+        ? (r.period_end as string)
+        : "";
+
+  const expRaw = r.experience as Record<string, unknown> | undefined;
+  const official_fee_reported_inr =
+    (expRaw?.official_fee_reported_inr as string | null) ?? (r.official_fee_reported_inr as string | null) ?? null;
+  const additional_amount_reported_inr =
+    (expRaw?.additional_amount_reported_inr as string | null) ?? (r.additional_amount_reported_inr as string | null) ?? null;
+  const amount_paid_inr = (expRaw?.amount_paid_inr as string | null) ?? (r.amount_paid_inr as string | null) ?? null;
+  const paid = typeof expRaw?.paid === "boolean" ? (expRaw.paid as boolean) : typeof r.paid === "boolean" ? (r.paid as boolean) : false;
+  const delay_days = (expRaw?.delay_days as number | null) ?? (r.delay_days as number | null) ?? null;
+  const visits = (expRaw?.visits as number | null) ?? (r.visits as number | null) ?? null;
+
+  const description = typeof r.description === "string" ? r.description : "";
+  const submitted_at =
+    typeof r.submitted_at === "string"
+      ? r.submitted_at
+      : typeof r.created_at === "string"
+        ? (r.created_at as string)
+        : new Date().toISOString();
+  const status_changed_at =
+    typeof r.status_changed_at === "string"
+      ? r.status_changed_at
+      : typeof r.created_at === "string"
+        ? (r.created_at as string)
+        : submitted_at;
+
+  const evidenceRaw = Array.isArray(r.evidence) ? r.evidence : [];
+  const evidence: EvidenceMeta[] = [];
+  for (const item of evidenceRaw) {
+    const m = normalizeEvidenceMeta(item);
+    if (m) evidence.push(m);
+  }
+
+  return {
+    public_id,
+    status: status as PublicReport["status"],
+    service,
+    state,
+    district,
+    period_start,
+    period_end,
+    official_fee_reported_inr,
+    additional_amount_reported_inr,
+    amount_paid_inr,
+    paid,
+    delay_days,
+    visits,
+    description,
+    evidence,
+    submitted_at,
+    status_changed_at,
+  };
 }
 
 function isApiErrorBody(value: unknown): value is ApiErrorBody {

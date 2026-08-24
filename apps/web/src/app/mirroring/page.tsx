@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 
 import { ActionLink, ButtonLink, SampleDataStrip } from "@/components/ui";
+import { MANDATORY_NOTICE } from "@/components/ui/callout";
 import { DownloadIcon } from "@/components/icons";
 import { CodeBlock, DocLayout, DocSection, DocTable, Prose, type TableOfContentsItem } from "@/components/doc";
-import { datasetDownloadUrl, getDatasetIndex } from "@/lib/api";
+import { datasetDownloads, getDatasetIndex } from "@/lib/api";
 
 // Request-time rendering: content comes from the API, a separate deployment
 // not guaranteed reachable at build time. See app/page.tsx for the full
@@ -47,17 +48,17 @@ const MANIFEST = `{
 
 export default async function MirroringPage() {
   const index = await getDatasetIndex();
-  const datasets = index.data.datasets;
+  const downloads = datasetDownloads(index.data);
 
-  const fetchCommands = datasets
-    .map((entry) => `curl -o ${entry.name}.${entry.format} ${datasetDownloadUrl(entry.name, entry.format)}`)
+  const fetchCommands = downloads
+    .map((entry) => `curl -o ${entry.name}.${entry.format} ${entry.url}`)
     .join("\n");
 
   const cronCommands = [
     "# crontab — fetch fresh snapshots hourly",
-    ...datasets.map(
+    ...downloads.map(
       (entry) =>
-        `0 * * * *  curl -fsS ${datasetDownloadUrl(entry.name, entry.format)} -o /var/www/mirror/${entry.name}.${entry.format}`,
+        `0 * * * *  curl -fsS ${entry.url} -o /var/www/mirror/${entry.name}.${entry.format}`,
     ),
   ].join("\n");
 
@@ -144,10 +145,10 @@ export default async function MirroringPage() {
             The dataset is available over plain HTTPS with no auth. The current snapshot lives at:
           </p>
           <ul>
-            {datasets.map((entry) => (
+            {downloads.map((entry) => (
               <li key={`${entry.name}.${entry.format}`}>
-                <a href={datasetDownloadUrl(entry.name, entry.format)} target="_blank" rel="noreferrer noopener">
-                  {datasetDownloadUrl(entry.name, entry.format)}
+                <a href={entry.url} target="_blank" rel="noreferrer noopener">
+                  {entry.url}
                 </a>{" "}
                 <span className="text-ink-muted">({entry.format.toUpperCase()})</span>
               </li>
@@ -155,10 +156,10 @@ export default async function MirroringPage() {
           </ul>
         </Prose>
         <div className="mt-4 flex flex-wrap gap-3">
-          {datasets.map((entry) => (
+          {downloads.map((entry) => (
             <ButtonLink
               key={`${entry.name}-${entry.format}`}
-              href={datasetDownloadUrl(entry.name, entry.format)}
+              href={entry.url}
               external
               variant="secondary"
               iconLeading={<DownloadIcon size={18} />}
@@ -274,7 +275,7 @@ export default async function MirroringPage() {
         lead="Please reproduce the notice from the methodology when serving mirrored data."
       >
         <Prose className="prose-measure">
-          <blockquote>{index.data.notice}</blockquote>
+          <blockquote>{MANDATORY_NOTICE}</blockquote>
           <p>
             And remember the limitations in the <a href="/methodology">methodology</a>: aggregates
             reflect what was reported, not a census; below-threshold cells are <code>null</code> by

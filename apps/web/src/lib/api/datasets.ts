@@ -21,7 +21,15 @@ import {
   type Sourced,
 } from "./client";
 import { deriveTotals, type DatasetRow } from "./dataset-aggregate";
-import type { DatasetIndex, Paginated, PlatformTotals, ServiceListItem, StateRef } from "./types";
+import type {
+  DatasetEntry,
+  DatasetFormat,
+  DatasetIndex,
+  Paginated,
+  PlatformTotals,
+  ServiceListItem,
+  StateRef,
+} from "./types";
 import { sampleDatasetIndex } from "@/lib/fixtures/datasets";
 import { samplePlatformTotals } from "@/lib/fixtures/aggregates";
 
@@ -30,6 +38,82 @@ export function getDatasetIndex(): Promise<Sourced<DatasetIndex>> {
     () => apiFetch<DatasetIndex>("/datasets", { revalidate: 300 }),
     () => sampleDatasetIndex,
   );
+}
+
+/** One downloadable file: a dataset paired with one of its serialisations. */
+export interface DatasetDownload {
+  name: string;
+  description: string;
+  format: DatasetFormat;
+  url: string;
+}
+
+/**
+ * Flatten the index into one row per downloadable file, which is how both
+ * /data and /mirroring present it (a CSV button and a JSON button).
+ *
+ * Handles BOTH the live API shape (`formats: { csv, json }`) and the legacy
+ * flat shape (`{ name, format, url }`) defensively — the helper is used at
+ * render time and must never throw because a format was renamed or a fixture
+ * still uses the old shape.
+ *
+ * Unknown format keys are ignored and only entries with a usable URL survive.
+ * The URL is rebuilt with `datasetDownloadUrl` instead of using the API's own
+ * absolute link because that link is built from the API's PUBLIC_BASE_URL, which
+ * a misconfigured deployment can leave pointing at localhost.
+ */
+export function datasetDownloads(index: DatasetIndex): DatasetDownload[] {
+  const known: DatasetFormat[] = ["csv", "json"];
+  const entries: DatasetDownload[] = [];
+
+  for (const entry of (index.datasets ?? []) as unknown as Record<string, unknown>[]) {
+    // Live shape: { name, description, formats: { csv, json } }
+    if (entry && typeof entry === "object" && "formats" in entry) {
+      const e = entry as unknown as DatasetEntry;
+      for (const format of known) {
+        const maybe = e.formats?.[format];
+        if (typeof maybe === "string" && maybe.length > 0) {
+          entries.push({
+            name: e.name,
+            description: e.description,
+            format,
+            url: datasetDownloadUrl(e.name, format),
+          });
+        }
+      }
+      continue;
+    }
+    // Legacy flat shape: { name, format, url } — accept defensively
+    if (
+      entry &&
+      typeof entry === "object" &&
+      "format" in entry &&
+      "url" in entry &&
+      typeof (entry as Record<string, unknown>).format === "string" &&
+      typeof (entry as Record<string, unknown>).url === "string"
+    ) {
+      const f = (entry as Record<string, unknown>).format as DatasetFormat;
+      if (known.includes(f)) {
+        entries.push({
+          name: String((entry as Record<string, unknown>).name ?? "reports"),
+          description: String((entry as Record<string, unknown>).description ?? ""),
+          format: f,
+          url: datasetDownloadUrl(String((entry as Record<string, unknown>).name ?? "reports"), f),
+        });
+      }
+    }
+  }
+
+  // If nothing was derived (malformed index), fall back to at least the known
+  // two files so the page still renders buttons rather than an empty state.
+  if (entries.length === 0 && (index.datasets?.length ?? 0) === 0) {
+    return [
+      { name: "reports", description: "Publishable citizen reports, PII-redacted.", format: "csv", url: datasetDownloadUrl("reports", "csv") },
+      { name: "reports", description: "Publishable citizen reports, PII-redacted.", format: "json", url: datasetDownloadUrl("reports", "json") },
+    ];
+  }
+
+  return entries;
 }
 
 /**

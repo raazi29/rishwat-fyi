@@ -234,17 +234,33 @@ export interface PublicReport {
   status_changed_at: IsoDateTime;
 }
 
+export type DatasetFormat = "csv" | "json";
+
+/**
+ * One dataset in the `/datasets` index.
+ *
+ * Mirrors the live API exactly (see docs/api.md → GET /datasets): a dataset is
+ * a single logical export, and each available serialisation is a URL under
+ * `formats`. The legacy flat shape (`{ name, format, url }`) is still accepted
+ * defensively so pages never crash if the fallback fixture or a stale deploy is
+ * served — `datasetDownloads` normalises either shape.
+ */
 export interface DatasetEntry {
   name: string;
-  format: "csv" | "json";
-  url: string;
+  description: string;
+  formats: Partial<Record<DatasetFormat, string>>;
+  /** @deprecated legacy flat entry — handled by datasetDownloads for backward compat */
+  format?: "csv" | "json";
+  /** @deprecated legacy flat entry — handled by datasetDownloads for backward compat */
+  url?: string;
 }
 
 export interface DatasetIndex {
   datasets: DatasetEntry[];
   generated_at: IsoDateTime;
   license: string;
-  notice: string;
+  /** Optional: live API omits it, fixtures may still carry it, pages fall back to MANDATORY_NOTICE */
+  notice?: string;
 }
 
 /* --- Admin -------------------------------------------------------------- */
