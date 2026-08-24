@@ -159,7 +159,7 @@ export default async function DataPage() {
             </p>
             <ul className="mt-3 space-y-2 text-body text-ink-secondary">
               <li>
-                <code className="font-mono text-ink">ip_hash</code> — the SHA-256 of the reporter&rsquo;s IP
+                <code className="font-mono text-ink">ip_hash</code> — the HMAC-SHA256 of the reporter&rsquo;s IP
               </li>
               <li>Device fingerprint hashes</li>
               <li>Submission-token hashes</li>

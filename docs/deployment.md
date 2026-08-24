@@ -217,13 +217,16 @@ switch.
 | `API_BASE_URL` | `https://api.rishwat.fyi` | Server-side calls. **Required** — the production build fails if neither this nor `NEXT_PUBLIC_API_BASE_URL` is set |
 | `NEXT_PUBLIC_API_BASE_URL` | `https://api.rishwat.fyi` | The origin a reader's browser must reach: dataset download links, the base URL printed on `/data/api`, the curl snippets on `/mirroring`. Must be publicly resolvable even if `API_BASE_URL` is internal |
 | `NEXT_PUBLIC_SITE_URL` | `https://rishwat.fyi` | Canonical origin for metadata, sitemap and robots. Falls back to Vercel's `VERCEL_PROJECT_PRODUCTION_URL`, then localhost — a sitemap of localhost URLs will get the site de-indexed |
-| `NEXT_PUBLIC_ALLOW_SAMPLE_FALLBACK` | `false` | See below |
+| `NEXT_PUBLIC_ALLOW_SAMPLE_FALLBACK` | omit (or `true`) | See below |
 
-Set `NEXT_PUBLIC_ALLOW_SAMPLE_FALLBACK=false` in production. Left at `true`, an
-API outage causes the site to quietly render the bundled sample dataset instead
-of an error. On a transparency project that publishes government fees, serving
-invented figures during an outage is worse than serving nothing — even with the
-sample-data strip visible.
+**Sample fallback is always enabled in production** regardless of this variable.
+The previous recommendation (`false`) turned every transient Render timeout into
+a Server Component exception — taking the entire page down behind
+`app/error.tsx` rather than serving the bundled sample with a visible
+SampleDataStrip disclosure. A transparency project that shows a broken page
+during a cold-start is worse than one that honestly shows "sample data — API
+unreachable" alongside a visible banner. The variable only takes effect in
+non-production environments (e.g. to exercise error boundaries in staging).
 
 Do **not** set it to `false` in CI, where the API is deliberately absent and the
 fallback is what allows the build to complete.

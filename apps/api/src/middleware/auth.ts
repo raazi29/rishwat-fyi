@@ -40,7 +40,8 @@ export const requireAuth = createMiddleware<AppEnv>(async (c, next) => {
   const secret = new TextEncoder().encode(c.get("config").jwtSecret);
   let payload: JWTPayload;
   try {
-    ({ payload } = await jwtVerify(token, secret));
+    // Pin to HS256 — prevents algorithm confusion (alg:none / RS256-with-symmetric-key).
+    ({ payload } = await jwtVerify(token, secret, { algorithms: ["HS256"] }));
   } catch {
     throw unauthorized("Invalid or expired token");
   }

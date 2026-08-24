@@ -64,7 +64,9 @@ export async function issueToken(
 export async function verifyToken(token: string, secret: string) {
   const key = new TextEncoder().encode(secret);
   try {
-    const { payload } = await jwtVerify(token, key);
+    // Pin to HS256 to prevent algorithm confusion attacks (alg:none, RS256 with
+    // the symmetric secret used as a public key, etc.). jose rejects mismatches.
+    const { payload } = await jwtVerify(token, key, { algorithms: ["HS256"] });
     if (!payload.sub || !payload.email || !payload.role) throw new Error("Invalid payload");
     return { id: payload.sub, email: payload.email as string, role: payload.role as string };
   } catch {

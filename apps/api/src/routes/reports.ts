@@ -7,7 +7,6 @@ import {
   verificationEvents,
 } from "@rishwat/database";
 import { publicIdSchema, reportSubmissionSchema } from "@rishwat/validation";
-import { timingSafeEqual } from "node:crypto";
 import { and, eq, notInArray, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { DEFAULT_TRUSTED_PROXY_HOPS } from "../config.js";
@@ -17,7 +16,7 @@ import { standardRateLimit, strictRateLimit } from "../middleware/rate-limit.js"
 import { evaluateAbuse } from "../services/abuse.service.js";
 import { findDuplicateGroup } from "../services/duplication.service.js";
 import { clientIp } from "../utils/client-ip.js";
-import { hmacHex, publicReportId, randomToken, sha256Hex } from "../utils/hashing.js";
+import { digestEquals, hmacHex, publicReportId, randomToken, sha256Hex } from "../utils/hashing.js";
 import { redactText } from "../utils/redaction.js";
 import { execRows } from "../utils/sql.js";
 import { verifyTurnstile } from "../utils/turnstile.js";
@@ -26,13 +25,6 @@ export const reports = new Hono<AppEnv>();
 
 // numeric(12,2) columns are represented as strings by the driver.
 const inr = (n: number | undefined): string | null => (n === undefined ? null : n.toFixed(2));
-
-// Constant-time comparison of two hex digests of equal length.
-function hashEquals(a: string, b: string): boolean {
-  const ab = Buffer.from(a);
-  const bb = Buffer.from(b);
-  return ab.length === bb.length && timingSafeEqual(ab, bb);
-}
 
 // POST / — submit a report. Body is validated, referential targets are checked
 // (400 rather than a raw FK 500), IP/device are hashed, and the report plus its
@@ -105,7 +97,10 @@ reports.post("/", strictRateLimit, async (c) => {
     if (!captcha.success) throw badRequest("CAPTCHA verification failed");
   }
 
-  const device = c.req.header("x-device-fingerprint");
+  const rawDevice = c.req.header("x-device-fingerprint");
+  // Cap at 256 chars: a multi-MB header would burn CPU in hmacHex. A real
+  // device fingerprint is ~64-128 hex chars; anything longer is abuse.
+  const device = rawDevice && rawDevice.length <= 256 ? rawDevice : undefined;
   // HMAC-SHA256, not bare SHA-256: the IPv4 space is only ~4.3B addresses, so an
   // unkeyed digest is trivially rainbow-tabled back to the raw IP. Keying with a
   // server-side secret the attacker does not hold defeats that precomputation.
@@ -198,7 +193,7 @@ reports.get("/:publicId/status", standardRateLimit, async (c) => {
   const tokenHash = sha256Hex(token);
   const dummyHash = "0".repeat(64);
   const storedHash = row?.token_hash ?? dummyHash;
-  const valid = !!row?.token_hash && hashEquals(storedHash, tokenHash);
+  const valid = !!row?.token_hash && digestEquals(storedHash, tokenHash);
   if (!valid) {
     throw notFound("Report not found");
   }

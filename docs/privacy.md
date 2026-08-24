@@ -21,11 +21,11 @@ The only data collected about a submitter is what is technically unavoidable for
 
 Raw identifiers are never stored and never returned from any API. Instead:
 
-- **IP address** → `sha256` hex digest (`ip_hash`)
-- **Device fingerprint** → `sha256` hex digest (`device_fingerprint_hash`)
-- **Submission token** → `sha256` hex digest (`submission_token_hash`)
+- **IP address** → HMAC-SHA256 hex digest (`ip_hash`)
+- **Device fingerprint** → HMAC-SHA256 hex digest (`device_fingerprint_hash`)
+- **Submission token** → SHA-256 hex digest (`submission_token_hash`)
 
-The raw submission token is shown to the reporter exactly once, at submission time, so they can later check their report's status — only its digest is persisted. The hashing lives in `apps/api/src/utils/hashing.ts` (`sha256Hex`, `randomToken`, `publicReportId`), and the database schema has no raw IP, fingerprint, or token columns at all. Because the digests are one-way and unsalted per-entity, they can only be used for the duplicate/abuse signals described in [Methodology](methodology.md) — they cannot be reversed into a person.
+The raw submission token is shown to the reporter exactly once, at submission time, so they can later check their report's status — only its digest is persisted. IP and device fingerprint are keyed with a server-side secret (`IP_HASH_SECRET`) via HMAC-SHA256, making them irreversible even against the full IPv4 address space. The submission token uses plain SHA-256 because it is already a high-entropy random value. The hashing lives in `apps/api/src/utils/hashing.ts` (`hmacHex`, `sha256Hex`, `randomToken`, `publicReportId`), and the database schema has no raw IP, fingerprint, or token columns at all.
 
 ## Evidence retention — 90 days
 

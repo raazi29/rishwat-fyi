@@ -69,15 +69,15 @@ export default function PrivacyPage() {
       <DocSection
         id="hashing"
         title="Hashing — never store raw identifiers"
-        lead="Raw identifiers are never stored and never returned from any API. Each is replaced by a one-way SHA-256 digest."
+        lead="Raw identifiers are never stored and never returned from any API. Each is replaced by a keyed one-way HMAC-SHA256 digest."
       >
         <CodeBlock
           code={
-            "IP address          →  sha256 hex digest  (ip_hash)\nDevice fingerprint  →  sha256 hex digest  (device_fingerprint_hash)\nSubmission token    →  sha256 hex digest  (submission_token_hash)"
+            "IP address          →  HMAC-SHA256 digest  (ip_hash)\nDevice fingerprint  →  HMAC-SHA256 digest  (device_fingerprint_hash)\nSubmission token    →  SHA-256 digest       (submission_token_hash)"
           }
           label="What is hashed"
           copy={false}
-          ariaLabel="The three identifiers hashed to SHA-256 digests"
+          ariaLabel="The three identifiers hashed to HMAC-SHA256 / SHA-256 digests"
         />
         <Prose className="prose-measure mt-6">
           <p>

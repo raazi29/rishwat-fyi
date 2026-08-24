@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgis/postgis:16-master
+    image: postgis/postgis:16-3.4
     container_name: rishwat-db
     environment:
       POSTGRES_USER: rishwat
@@ -32,6 +32,7 @@ services:
       # Local dev only. Must be >= 32 chars: config.ts rejects short or
       # placeholder secrets at boot outside tests. Never reuse this anywhere real.
       JWT_SECRET: local-dev-only-secret-not-for-production-use
+      IP_HASH_SECRET: local-dev-only-ip-hash-secret-not-for-prod
       EVIDENCE_STORAGE_DRIVER: local
       EVIDENCE_STORAGE_DIR: ./data/evidence
       PUBLIC_BASE_URL: http://localhost:8787

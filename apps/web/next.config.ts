@@ -81,14 +81,19 @@ const nextConfig: NextConfig = {
     const isDev = process.env.NODE_ENV !== "production";
     const csp = [
       "default-src 'self'",
-      `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
+      `script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com${isDev ? " 'unsafe-eval'" : ""}`,
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob:",
       "font-src 'self'",
-      `connect-src 'self' https://api.rishwat.fyi${isDev ? " ws:" : ""}`,
+      `connect-src 'self' https://api.rishwat.fyi${isDev ? " ws:" : ""}${isDev ? "" : " https://challenges.cloudflare.com"}`,
       "frame-ancestors 'none'",
+      "frame-src 'self' https://challenges.cloudflare.com",
+      "child-src 'self'",
+      "worker-src 'self'",
+      "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",
+      ...(!isDev ? ["upgrade-insecure-requests"] : []),
     ].join("; ");
 
     return [

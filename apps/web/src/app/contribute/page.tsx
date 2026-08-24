@@ -191,7 +191,7 @@ plan/                 Product vision and implementation plans`}
             </li>
             <li>
               <strong>PII rule.</strong> Never store raw IP, device fingerprint or submission token —
-              store only SHA-256 hex digests, and never return them.
+              store only keyed HMAC-SHA256 digests, and never return them.
             </li>
             <li>
               <strong>Enums match exactly.</strong> The zod schema mirrors the Postgres{" "}
