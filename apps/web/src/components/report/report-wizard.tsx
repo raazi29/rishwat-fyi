@@ -30,6 +30,7 @@ import { StepExperience } from "./steps/step-experience";
 import { StepPayments } from "./steps/step-payments";
 import { StepDescription } from "./steps/step-description";
 import { StepReview } from "./steps/step-review";
+import { TURNSTILE_ENABLED } from "./turnstile-widget";
 
 const STEP_ITEMS: StepItem[] = WIZARD_STEPS.map((step) => ({ title: step.title }));
 
@@ -44,6 +45,11 @@ export function ReportWizard({ geo, apiAvailable = true }: { geo: WizardGeo; api
   const [state, dispatch] = useReducer(wizardReducer, INITIAL_STATE);
   const [hydrated, setHydrated] = useState(false);
   const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
+  // Cloudflare Turnstile: the solved token (null until solved / after it clears),
+  // and a counter the submit handler bumps to force a fresh challenge on retry —
+  // a Turnstile token is single-use, so a reused one always fails verification.
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [captchaReset, setCaptchaReset] = useState(0);
   const [draftSaved, setDraftSaved] = useState(false);
   const [live, setLive] = useState("");
   const headingRef = useRef<HTMLLegendElement>(null);
@@ -127,8 +133,36 @@ export function ReportWizard({ geo, apiAvailable = true }: { geo: WizardGeo; api
       return;
     }
 
+    // When Turnstile is enabled we must hold a solved token before submitting —
+    // the API rejects a tokenless report, so gate here with a clear message
+    // rather than letting it fail server-side. Skipped entirely when Turnstile
+    // is not configured (the widget renders nothing and no token is expected).
+    if (TURNSTILE_ENABLED && !turnstileToken) {
+      dispatch({
+        type: "submitError",
+        failure: {
+          code: "captcha",
+          message: "Please complete the \u201cVerify you\u2019re human\u201d check above before submitting.",
+          retryable: true,
+        },
+      });
+      setLive("Please complete the verification check before submitting.");
+      return;
+    }
+
     dispatch({ type: "submitStart" });
-    const res = await submitReportAction(result.payload);
+    const payload = turnstileToken
+      ? { ...result.payload, turnstile_token: turnstileToken }
+      : result.payload;
+    const res = await submitReportAction(payload);
+
+    // Whatever happens next, this attempt consumed the single-use CAPTCHA token.
+    // Discard it and issue a fresh challenge so a retry is not guaranteed to fail
+    // on a replayed token. Harmless when Turnstile is disabled.
+    if (TURNSTILE_ENABLED && !res.ok) {
+      setTurnstileToken(null);
+      setCaptchaReset((n) => n + 1);
+    }
 
     if (res.ok) {
       const sel = resolveSelections(state.data, geo);
@@ -241,7 +275,13 @@ export function ReportWizard({ geo, apiAvailable = true }: { geo: WizardGeo; api
                 <StepDescription {...stepProps} evidenceFile={evidenceFile} onEvidenceSelect={setEvidenceFile} />
               ) : null}
               {state.step === 4 ? (
-                <StepReview {...stepProps} goto={goto} evidenceFile={evidenceFile} />
+                <StepReview
+                  {...stepProps}
+                  goto={goto}
+                  evidenceFile={evidenceFile}
+                  onTurnstileVerify={setTurnstileToken}
+                  turnstileResetKey={captchaReset}
+                />
               ) : null}
             </div>
           </fieldset>
@@ -259,11 +299,17 @@ export function ReportWizard({ geo, apiAvailable = true }: { geo: WizardGeo; api
 
           {state.failure ? (
             <Callout
-              tone={state.failure.code === "rate_limited" ? "info" : "notice"}
+              tone={
+                state.failure.code === "rate_limited" || state.failure.code === "captcha"
+                  ? "info"
+                  : "notice"
+              }
               title={
                 state.failure.code === "rate_limited"
                   ? "You've reached the reporting limit"
-                  : "We couldn't submit this report"
+                  : state.failure.code === "captcha"
+                    ? "One more step"
+                    : "We couldn't submit this report"
               }
               className="mt-6"
             >

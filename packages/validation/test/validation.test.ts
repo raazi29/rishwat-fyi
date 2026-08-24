@@ -93,6 +93,31 @@ describe("reportSubmissionSchema", () => {
     });
     expect(res.success).toBe(false);
   });
+
+  // turnstile_token lives in the shared schema so it survives the web server
+  // action's re-parse (Zod strips unknown keys) on its way to the API.
+  it("retains an optional turnstile_token on the parsed output", () => {
+    const res = reportSubmissionSchema.safeParse({
+      ...baseReport,
+      turnstile_token: "0.abc123-turnstile-token",
+    });
+    expect(res.success).toBe(true);
+    if (res.success) expect(res.data.turnstile_token).toBe("0.abc123-turnstile-token");
+  });
+
+  it("accepts a report with no turnstile_token (Turnstile disabled)", () => {
+    const res = reportSubmissionSchema.safeParse(baseReport);
+    expect(res.success).toBe(true);
+    if (res.success) expect(res.data.turnstile_token).toBeUndefined();
+  });
+
+  it("rejects an implausibly long turnstile_token", () => {
+    const res = reportSubmissionSchema.safeParse({
+      ...baseReport,
+      turnstile_token: "x".repeat(2049),
+    });
+    expect(res.success).toBe(false);
+  });
 });
 
 describe("moderationDecisionSchema", () => {

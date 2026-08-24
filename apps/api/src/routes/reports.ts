@@ -20,6 +20,7 @@ import { clientIp } from "../utils/client-ip.js";
 import { hmacHex, publicReportId, randomToken, sha256Hex } from "../utils/hashing.js";
 import { redactText } from "../utils/redaction.js";
 import { execRows } from "../utils/sql.js";
+import { verifyTurnstile } from "../utils/turnstile.js";
 
 export const reports = new Hono<AppEnv>();
 
@@ -87,6 +88,23 @@ reports.post("/", strictRateLimit, async (c) => {
   // null (→ no ip_hash, contributing no independence) when nothing is trustworthy.
   // Only the digest is ever persisted (PII rule).
   const ip = clientIp(c, c.get("config").trustedProxyHops ?? DEFAULT_TRUSTED_PROXY_HOPS);
+
+  // Cloudflare Turnstile CAPTCHA. When a secret is configured, a report is only
+  // accepted if the browser solved the challenge — the one signal an automated
+  // client that skips the widget cannot forge. Skipped entirely when no secret
+  // is set (local dev and the test-suite run without a CAPTCHA). The token is
+  // single-use and short-lived, so a missing, expired, or replayed token fails
+  // here with a 400 rather than quietly creating a report. `ip` doubles as the
+  // optional `remoteip` signal. Fails closed: if Cloudflare is unreachable,
+  // verifyTurnstile returns success:false and the submission is rejected.
+  const turnstileSecret = c.get("config").turnstileSecretKey;
+  if (turnstileSecret) {
+    const captcha = input.turnstile_token
+      ? await verifyTurnstile(turnstileSecret, input.turnstile_token, ip ?? undefined)
+      : { success: false, errorCodes: ["missing-input-response"] };
+    if (!captcha.success) throw badRequest("CAPTCHA verification failed");
+  }
+
   const device = c.req.header("x-device-fingerprint");
   // HMAC-SHA256, not bare SHA-256: the IPv4 space is only ~4.3B addresses, so an
   // unkeyed digest is trivially rainbow-tabled back to the raw IP. Keying with a

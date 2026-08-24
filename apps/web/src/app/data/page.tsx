@@ -4,6 +4,7 @@ import Image from "next/image";
 import { ActionLink, ButtonLink, NoticeStrip, SampleDataStrip } from "@/components/ui";
 import { DownloadIcon, EyeOffIcon } from "@/components/icons";
 import { CodeBlock, DocLayout, DocSection, Prose, ThresholdCallout, type TableOfContentsItem } from "@/components/doc";
+import { BreadcrumbJsonLd, DatasetJsonLd } from "@/components/seo/json-ld";
 import { datasetDownloads, getDatasetIndex } from "@/lib/api";
 import { formatDateTime } from "@/lib/utils/format";
 
@@ -35,7 +36,15 @@ export default async function DataPage() {
   const citation = `Rishwat.fyi — citizen-reported government-service experiences (reports dataset). Snapshot generated ${formatDateTime(generated_at)}. Licensed under CC BY 4.0.`;
 
   return (
-    <DocLayout
+    <>
+      <DatasetJsonLd />
+      <BreadcrumbJsonLd
+        items={[
+          { name: "Home", url: "/" },
+          { name: "Open data", url: "/data" },
+        ]}
+      />
+      <DocLayout
       title="Open data"
       lead="Rishwat.fyi is infrastructure, not just a website. Every public number links back to the dataset, the API, and the method behind it — because the data has to outlive the interface."
       toc={TOC}
@@ -208,6 +217,7 @@ export default async function DataPage() {
           <ActionLink href="/mirroring">Mirror the dataset</ActionLink>
         </div>
       </DocSection>
-    </DocLayout>
+      </DocLayout>
+    </>
   );
 }

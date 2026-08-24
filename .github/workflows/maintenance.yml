@@ -1,6 +1,6 @@
 name: maintenance
 
-# The three jobs docs/production-setup.md §Scheduled jobs requires. Without
+# The three jobs docs/deployment.md §Scheduled jobs requires. Without
 # them: aggregate_metrics stays empty so no published figure is ever refreshed,
 # below-threshold cells never auto-corroborate, and evidence is not deleted at
 # 90 days -- which is a promise docs/privacy.md makes to reporters.

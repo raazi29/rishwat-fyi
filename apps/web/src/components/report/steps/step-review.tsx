@@ -7,6 +7,7 @@ import { formatInr } from "@/lib/utils/format";
 import type { StepProps } from "../wizard-types";
 import { FREQUENCY_OPTIONS, ISSUE_OPTIONS, PERIOD_OPTIONS } from "../wizard-types";
 import { parseMoney, resolveSelections } from "../wizard-logic";
+import { TURNSTILE_ENABLED, TurnstileWidget } from "../turnstile-widget";
 
 function money(value: string): string | null {
   const parsed = parseMoney(value);
@@ -68,7 +69,16 @@ export function StepReview({
   geo,
   goto,
   evidenceFile,
-}: StepProps & { goto: (step: number) => void; evidenceFile: File | null }) {
+  onTurnstileVerify,
+  turnstileResetKey,
+}: StepProps & {
+  goto: (step: number) => void;
+  evidenceFile: File | null;
+  /** Receives the Turnstile token (or null when it clears/expires). */
+  onTurnstileVerify: (token: string | null) => void;
+  /** Bumped by the wizard after a failed submit to force a fresh challenge. */
+  turnstileResetKey: number;
+}) {
   const sel = resolveSelections(data, geo);
   const department = geo.departments.find((d) => d.slug === data.departmentSlug)?.name ?? null;
   const period = PERIOD_OPTIONS.find((p) => p.value === data.period)?.label ?? null;
@@ -139,6 +149,26 @@ export function StepReview({
         resent, and it is the only way to check your report&rsquo;s status later — copy it somewhere
         safe when it appears.
       </Callout>
+
+      {/* Turnstile CAPTCHA — only present when a site key is configured; the
+          widget itself also renders nothing without one (graceful degradation).
+          Sits last, directly above the Submit button in the wizard footer. */}
+      {TURNSTILE_ENABLED ? (
+        <section className="rounded-md border border-line bg-surface p-4">
+          <h3 className="font-sans text-h3 font-semibold text-ink">Verify you&rsquo;re human</h3>
+          <p className="mt-1 text-label text-ink-muted">
+            A quick, privacy-friendly check from Cloudflare before you submit — no puzzles, no
+            personal data.
+          </p>
+          <div className="mt-3">
+            <TurnstileWidget
+              onVerify={onTurnstileVerify}
+              resetKey={turnstileResetKey}
+              action="report_submit"
+            />
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }

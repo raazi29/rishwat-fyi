@@ -1,10 +1,12 @@
 import type { Metadata, Viewport } from "next";
 import { JetBrains_Mono, Public_Sans, Source_Serif_4 } from "next/font/google";
 
+import { PlausibleAnalytics } from "@/components/analytics/plausible";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import { SkipLink } from "@/components/layout/skip-link";
 import { ThemeScript } from "@/components/layout/theme-script";
+import { OrganizationJsonLd, WebSiteJsonLd } from "@/components/seo/json-ld";
 import { SITE_URL } from "@/lib/site-url";
 
 import "./globals.css";
@@ -89,6 +91,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <SiteHeader />
         <main id="main">{children}</main>
         <SiteFooter />
+        <OrganizationJsonLd />
+        <WebSiteJsonLd />
+        <PlausibleAnalytics />
       </body>
     </html>
   );

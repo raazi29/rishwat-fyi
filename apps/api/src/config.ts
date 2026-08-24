@@ -39,6 +39,15 @@ export interface AppConfig {
    * IP-hash prefixes and must never be readable by an arbitrary origin.
    */
   adminCorsOrigins?: string[];
+  /**
+   * Cloudflare Turnstile secret key for server-side CAPTCHA verification of
+   * `POST /reports`. Optional: when unset, verification is skipped entirely —
+   * the safe default, and what local dev and the test-suite run with. When set,
+   * a submission is rejected (400) unless it carries a token Cloudflare
+   * confirms. The paired public site key lives in the web app as
+   * `NEXT_PUBLIC_TURNSTILE_SITE_KEY`.
+   */
+  turnstileSecretKey?: string;
 }
 
 /** Trust no forwarding header unless TRUSTED_PROXY_HOPS says otherwise. */
@@ -205,5 +214,11 @@ export function loadConfig(env: Env = process.env): AppConfig {
     rateLimit: { enabled: rateLimitEnabled },
     trustedProxyHops,
     adminCorsOrigins,
+    // Empty string is treated as "unset" (the .env.example ships it blank), so a
+    // blank value disables verification rather than passing "" to Cloudflare.
+    turnstileSecretKey:
+      env.TURNSTILE_SECRET_KEY !== undefined && env.TURNSTILE_SECRET_KEY !== ""
+        ? env.TURNSTILE_SECRET_KEY
+        : undefined,
   };
 }

@@ -190,6 +190,12 @@ export interface ReportSubmission {
   delay_days?: number;
   visits?: number;
   description: string;
+  /**
+   * Cloudflare Turnstile CAPTCHA token, attached by the report wizard when
+   * `NEXT_PUBLIC_TURNSTILE_SITE_KEY` is configured. Verified server-side by the
+   * API; omitted entirely when Turnstile is not enabled.
+   */
+  turnstile_token?: string;
 }
 
 export interface ReportSubmissionResponse {

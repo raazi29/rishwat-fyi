@@ -172,6 +172,13 @@ export function createApp(
       message: redactSecrets(e.message ?? String(err)),
       stack: e.stack,
     });
+    // TODO(sentry): report this unexpected error once Sentry is enabled. Only
+    // unhandled errors reach this branch — AppError and HTTPException above are
+    // expected control flow and must NOT be captured. After installing
+    // @sentry/node and wiring up ./lib/sentry.ts (see its header), do e.g.:
+    //   import { SENTRY_ENABLED } from "./lib/sentry.js";
+    //   import * as Sentry from "@sentry/node";
+    //   if (SENTRY_ENABLED) Sentry.captureException(err);
     return c.json(
       { error: { code: "internal_error", message: "Internal server error" } },
       500,

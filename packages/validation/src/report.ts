@@ -31,6 +31,13 @@ export const reportSubmissionSchema = z
     delay_days: z.number().int().min(0).max(3650).optional(),
     visits: z.number().int().min(1).max(50).optional(),
     description: z.string().min(30).max(5000),
+    // Cloudflare Turnstile CAPTCHA token. The web wizard attaches it on submit;
+    // the API verifies it against Cloudflare only when TURNSTILE_SECRET_KEY is
+    // set, and ignores it otherwise (dev/test). It lives in the SHARED schema on
+    // purpose: the web server action re-parses the payload with this same schema
+    // before forwarding it, and Zod strips unknown keys by default — so a token
+    // absent from here would be silently dropped before ever reaching the API.
+    turnstile_token: z.string().max(2048).optional(),
   })
   .refine((d) => (d.service_id === undefined) !== (d.service_slug === undefined), {
     message: "exactly one of service_id or service_slug is required",

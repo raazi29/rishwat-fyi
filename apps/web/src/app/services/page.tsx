@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Container } from "@/components/layout/container";
 import { ButtonLink, EmptyState, SampleDataStrip } from "@/components/ui";
 import { CompassIcon } from "@/components/icons";
+import { BreadcrumbJsonLd } from "@/components/seo/json-ld";
 import { getComparisonRows, listDepartments, type ComparisonRow } from "@/lib/api";
 import { DepartmentFilter } from "@/components/service/department-filter";
 import { ServiceGroup } from "@/components/service/service-group";
@@ -72,7 +73,14 @@ export default async function ServicesPage({
       }`;
 
   return (
-    <Container>
+    <>
+      <BreadcrumbJsonLd
+        items={[
+          { name: "Home", url: "/" },
+          { name: "Government services", url: "/services" },
+        ]}
+      />
+      <Container>
       <div className="space-y-6 py-8 lg:py-10">
         <header className="prose-measure">
           <h1 className="font-serif text-h1 font-bold text-ink">Government services</h1>
@@ -114,6 +122,7 @@ export default async function ServicesPage({
           </div>
         )}
       </div>
-    </Container>
+      </Container>
+    </>
   );
 }

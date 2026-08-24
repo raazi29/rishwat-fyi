@@ -44,10 +44,58 @@ const nextConfig: NextConfig = {
     return config;
   },
   async headers() {
+    // Content-Security-Policy.
+    //
+    // The list below is the strict production baseline: it blocks injected
+    // external scripts, clickjacking via framing, <base> hijacking and
+    // cross-origin form posts. `next dev` needs two directives loosened, so the
+    // development build (NODE_ENV !== "production") appends exactly those two
+    // and nothing else:
+    //
+    //   - script-src gains 'unsafe-eval' — webpack's dev source maps and React
+    //     Fast Refresh evaluate code via eval(). Production ships no eval and
+    //     must never allow it.
+    //   - connect-src gains the HMR WebSocket (ws:) — `next dev` streams hot
+    //     updates over a WebSocket, and 'self' does not reliably match the ws:
+    //     scheme across browsers.
+    //
+    // Directives that are identical in both environments, and why they are what
+    // they are:
+    //   - script-src keeps 'unsafe-inline': Next injects inline bootstrap and
+    //     hydration scripts, and the pre-paint theme bootstrap
+    //     (components/layout/theme-script.tsx) is an inline <script>. This is
+    //     the weakest part of the policy; tightening it to a per-request nonce
+    //     needs middleware and is deliberately left for later.
+    //   - style-src 'unsafe-inline' covers React inline style={...} attributes
+    //     used across the chart and map components, plus Next's injected styles.
+    //   - img-src allows data: (the inline brand mark, next/image blur
+    //     placeholders) and blob: (client-generated object URLs).
+    //   - connect-src names the API origin for browser-initiated calls. Today
+    //     every API call is proxied through the Next server — Server Components
+    //     fetch server-side (not subject to CSP) and Server Actions POST to
+    //     'self' — so 'self' alone already covers current runtime traffic;
+    //     https://api.rishwat.fyi is listed so a future client-side fetch keeps
+    //     working without another deploy.
+    //   - frame-ancestors 'none' is the modern twin of the X-Frame-Options:
+    //     DENY header below; both are sent for older-browser coverage.
+    const isDev = process.env.NODE_ENV !== "production";
+    const csp = [
+      "default-src 'self'",
+      `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: blob:",
+      "font-src 'self'",
+      `connect-src 'self' https://api.rishwat.fyi${isDev ? " ws:" : ""}`,
+      "frame-ancestors 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+    ].join("; ");
+
     return [
       {
         source: "/:path*",
         headers: [
+          { key: "Content-Security-Policy", value: csp },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           { key: "X-Frame-Options", value: "DENY" },

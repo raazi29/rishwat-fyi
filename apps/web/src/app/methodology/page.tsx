@@ -10,6 +10,7 @@ import {
   ThresholdCallout,
   type TableOfContentsItem,
 } from "@/components/doc";
+import { BreadcrumbJsonLd } from "@/components/seo/json-ld";
 import { MANDATORY_NOTICE } from "@/components/ui/callout";
 
 import { StatusLadder } from "./_components/status-ladder";
@@ -33,7 +34,14 @@ const TOC: TableOfContentsItem[] = [
 
 export default function MethodologyPage() {
   return (
-    <DocLayout
+    <>
+      <BreadcrumbJsonLd
+        items={[
+          { name: "Home", url: "/" },
+          { name: "Methodology", url: "/methodology" },
+        ]}
+      />
+      <DocLayout
       title="Methodology"
       lead="How Rishwat.fyi turns anonymous citizen reports into public statistics — and what it refuses to claim. That measurement only means something if the method behind it is published, repeatable, and honest about its limits. This document is that method."
       toc={TOC}
@@ -303,6 +311,7 @@ export default function MethodologyPage() {
           <ActionLink href="/data">Get the open dataset</ActionLink>
         </div>
       </DocSection>
-    </DocLayout>
+      </DocLayout>
+    </>
   );
 }
