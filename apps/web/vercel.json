@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
-  "installCommand": "node -e \"const fs=require('fs');let d=process.cwd();while(!fs.existsSync(d+'/packages/database')){const p=require('path').dirname(d);if(p===d)throw new Error('workspace root not found');d=p}process.chdir(d);require('child_process').execSync('npm install --workspace apps/web --workspace apps/api --workspace packages/database --workspace packages/validation --include-workspace-root',{stdio:'inherit',cwd:d})\"",
+  "installCommand": "test -d packages/database && npm install -w apps/web -w apps/api -w packages/database -w packages/validation --include-workspace-root || (cd ../.. && npm install -w apps/web -w apps/api -w packages/database -w packages/validation --include-workspace-root)",
   "buildCommand": "next build",
   "outputDirectory": ".next"
 }
