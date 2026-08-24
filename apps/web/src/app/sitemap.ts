@@ -1,6 +1,13 @@
 import type { MetadataRoute } from "next";
 
-import { SampleFallbackDisabledError, listDepartments, listServices, listStates } from "@/lib/api";
+import {
+  getDatasetIndex,
+  listDistricts,
+  SampleFallbackDisabledError,
+  listDepartments,
+  listServices,
+  listStates,
+} from "@/lib/api";
 import { SITE_URL } from "@/lib/site-url";
 
 // Request-time rendering: the catalogue slugs come from the API, a separate
@@ -78,11 +85,25 @@ async function enumerate<T>(
  * the seeded sample), so the enumeration is normally complete.
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const lastModified = new Date();
+  // Use dataset snapshot date as lastModified for data-driven pages when available,
+  // so Google sees a meaningful freshness signal tied to official verification updates
+  // rather than a per-request now() that would mark every URL as always fresh.
+  let datasetDate: Date | null = null;
+  try {
+    const idx = await getDatasetIndex();
+    if (idx.source === "api" && idx.data.generated_at) {
+      const parsed = new Date(idx.data.generated_at);
+      if (!Number.isNaN(parsed.getTime())) datasetDate = parsed;
+    }
+  } catch {
+    // best-effort: fallback to now
+  }
+  const dynamicLastModified = datasetDate ?? new Date();
+  const staticLastModified = new Date();
 
   const staticEntries: MetadataRoute.Sitemap = STATIC_ROUTES.map((route) => ({
     url: `${SITE_URL}${route.path}`,
-    lastModified,
+    lastModified: staticLastModified,
     changeFrequency: route.changeFrequency,
     priority: route.priority,
   }));
@@ -92,24 +113,64 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       async () => ({ data: (await listServices({ per_page: 100 })).data.items }),
       (service) => ({
         url: `${SITE_URL}/services/${service.slug}`,
-        lastModified,
+        lastModified: dynamicLastModified,
         changeFrequency: "weekly" as const,
         priority: 0.8,
+        // Hint for image sitemap discovery (Next supports images array)
+        images: [`${SITE_URL}/brand/illustration-official-vs-reported.webp`],
       }),
     ),
     enumerate(listStates, (state) => ({
       url: `${SITE_URL}/states/${state.code}`,
-      lastModified,
+      lastModified: dynamicLastModified,
       changeFrequency: "weekly" as const,
       priority: 0.6,
     })),
     enumerate(listDepartments, (department) => ({
       url: `${SITE_URL}/departments/${department.slug}`,
-      lastModified,
+      lastModified: dynamicLastModified,
       changeFrequency: "weekly" as const,
       priority: 0.6,
     })),
   ]);
 
-  return [...staticEntries, ...serviceEntries, ...stateEntries, ...departmentEntries];
+  // District pages — long-tail SEO (service × district). Best-effort: up to ~800 URLs.
+  // Each district gets a dedicated landing `/states/[code]/[district]` (slugified).
+  // If the catalogue is unavailable, districts are omitted rather than failing the sitemap.
+  let districtEntries: MetadataRoute.Sitemap = [];
+  try {
+    const states = (await listStates()).data;
+    // Fetch districts per state in parallel but capped to avoid thundering herd on cold start
+    const perState = await Promise.all(
+      states.map(async (state) => {
+        try {
+          const districts = (await listDistricts(state.code)).data;
+          return districts.map((d) => {
+            const slug = d.name
+              .toLowerCase()
+              .trim()
+              .replace(/\s+/g, "-")
+              .replace(/[^a-z0-9-]/g, "")
+              .replace(/-+/g, "-");
+            return {
+              url: `${SITE_URL}/states/${state.code}/${slug}`,
+              lastModified: dynamicLastModified,
+              changeFrequency: "weekly" as const,
+              priority: 0.5,
+            } satisfies MetadataRoute.Sitemap[number];
+          });
+        } catch (e) {
+          if (e instanceof SampleFallbackDisabledError) return [];
+          throw e;
+        }
+      }),
+    );
+    districtEntries = perState.flat();
+    // Safety cap: Next sitemaps have no hard limit but keep under 2k for now
+    if (districtEntries.length > 2000) districtEntries = districtEntries.slice(0, 2000);
+  } catch (e) {
+    if (!(e instanceof SampleFallbackDisabledError)) throw e;
+  }
+
+  return [...staticEntries, ...serviceEntries, ...stateEntries, ...departmentEntries, ...districtEntries];
 }

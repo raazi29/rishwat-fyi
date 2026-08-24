@@ -154,7 +154,7 @@ export default async function StateDetailPage({ params }: { params: Params }) {
           >
             Districts in {state.name}
           </SectionHeading>
-          <DistrictList districts={districts} stateName={state.name} />
+          <DistrictList districts={districts} stateName={state.name} stateCode={state.code} />
         </section>
 
         <NoticeStrip />
