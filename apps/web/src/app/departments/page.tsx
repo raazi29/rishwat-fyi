@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { Container } from "@/components/layout/container";
 import { SampleDataStrip } from "@/components/ui";
+import { BreadcrumbJsonLd, CollectionPageJsonLd } from "@/components/seo/json-ld";
 import { getComparisonRows, listDepartments } from "@/lib/api";
 import { parseInr } from "@/lib/utils/format";
 import { DepartmentGroupList, type DepartmentSummary } from "@/components/geo";
@@ -58,8 +59,18 @@ export default async function DepartmentsPage() {
 
   const totalServices = summaries.reduce((sum, department) => sum + department.serviceCount, 0);
 
+  const collectionItems = summaries.slice(0, 20).map((d) => ({ name: d.name, url: `/departments/${d.slug}` }));
+
   return (
-    <Container>
+    <>
+      <BreadcrumbJsonLd items={[{ name: "Home", url: "/" }, { name: "Departments", url: "/departments" }]} />
+      <CollectionPageJsonLd
+        name="Government departments"
+        description="The government departments behind the services we track — each with its service count, official-fee range and citizen report count."
+        url="/departments"
+        items={collectionItems}
+      />
+      <Container>
       <div className="space-y-6 py-8 lg:py-10">
         <header className="prose-measure">
           <h1 className="font-serif text-h1 font-bold text-ink">Government departments</h1>
@@ -74,6 +85,7 @@ export default async function DepartmentsPage() {
 
         <DepartmentGroupList departments={summaries} />
       </div>
-    </Container>
+      </Container>
+    </>
   );
 }

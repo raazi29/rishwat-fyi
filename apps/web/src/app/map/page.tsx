@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { Container } from "@/components/layout/container";
 import { NoticeStrip, Panel, SampleDataStrip } from "@/components/ui";
+import { BreadcrumbJsonLd, FaqJsonLd } from "@/components/seo/json-ld";
 import { getStateGaps } from "@/lib/api";
 import {
   MetricSwitcher,
@@ -44,8 +45,22 @@ export default async function MapPage({
   const ranked = rankStates(states, metric);
   const config = stateMetricConfig(metric);
 
+  const faqItems = [
+    {
+      question: "What does the map show?",
+      answer: "Where citizens reported paying more, waiting longer, or making more visits than the official procedure specifies, coloured by median additional amount or report volume per state.",
+    },
+    {
+      question: "What does the map not show?",
+      answer: "It does not rank corruption. A higher gap means more reports of a gap, not proof of wrongdoing. States with few reports show 'Not enough reports yet', never a zero.",
+    },
+  ];
+
   return (
-    <Container>
+    <>
+      <BreadcrumbJsonLd items={[{ name: "Home", url: "/" }, { name: "Map", url: "/map" }]} />
+      <FaqJsonLd items={faqItems} />
+      <Container>
       <div className="space-y-8 py-8 lg:py-10">
         <header className="prose-measure">
           <h1 className="font-serif text-h1 font-bold text-ink">
@@ -108,7 +123,8 @@ export default async function MapPage({
           <NoticeStrip />
         </section>
       </div>
-    </Container>
+      </Container>
+    </>
   );
 }
 

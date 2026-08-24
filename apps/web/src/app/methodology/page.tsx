@@ -10,7 +10,7 @@ import {
   ThresholdCallout,
   type TableOfContentsItem,
 } from "@/components/doc";
-import { BreadcrumbJsonLd } from "@/components/seo/json-ld";
+import { ArticleJsonLd, BreadcrumbJsonLd, FaqJsonLd } from "@/components/seo/json-ld";
 import { MANDATORY_NOTICE } from "@/components/ui/callout";
 
 import { StatusLadder } from "./_components/status-ladder";
@@ -39,6 +39,31 @@ export default function MethodologyPage() {
         items={[
           { name: "Home", url: "/" },
           { name: "Methodology", url: "/methodology" },
+        ]}
+      />
+      <ArticleJsonLd
+        headline="Methodology — How citizen reports become public statistics"
+        description="The verification ladder, publishing threshold, aggregate definitions, anti-abuse system, and honest limitations behind Rishwat.fyi public data."
+        url="/methodology"
+      />
+      <FaqJsonLd
+        items={[
+          {
+            question: "What is the publishing threshold?",
+            answer: "A statistic publishes only when a (service, district) cell has ≥3 reports from ≥2 distinct IP-hash buckets. Below that every statistic is null while the count still shows.",
+          },
+          {
+            question: "How is a report verified?",
+            answer: "Reports climb submitted → validated → corroborated → evidence_backed → officially_acknowledged. Corroborated requires ≥2 independent reports; evidence-backed adds accepted evidence; officially acknowledged adds a government source.",
+          },
+          {
+            question: "How are abuse and fakes handled?",
+            answer: "Rate limits, text similarity ≥0.75 duplicate detection, IP/device signals, coordinated burst detection, and an abuse score capped at 100. Flagged reports stay for human moderation.",
+          },
+          {
+            question: "What does the mandatory notice mean?",
+            answer: "Citizen reports represent reported experiences and are not automatically verified findings of wrongdoing. Extremes cannot skew medians because aggregates use medians, not means.",
+          },
         ]}
       />
       <DocLayout

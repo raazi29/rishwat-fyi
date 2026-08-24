@@ -153,3 +153,205 @@ export function BreadcrumbJsonLd({ items }: { items: BreadcrumbItem[] }) {
     />
   );
 }
+
+/* ───────── GovernmentService ────────────────────────────────────────── */
+
+/** Props for the per-service structured data. */
+export interface GovernmentServiceProps {
+  slug: string;
+  name: string;
+  department: string;
+  description: string;
+  officialFeeInr: string | null;
+  officialTimelineDays: number | null;
+  reportCount: number;
+  areaServed?: string;
+}
+
+/**
+ * GovernmentService graph for `/services/[slug]`.
+ * Targets long-tail queries like “driving licence fee Uttar Pradesh”.
+ * Uses INR price when fee is fixed, otherwise omits offers.
+ */
+export function GovernmentServiceJsonLd({
+  slug,
+  name,
+  department,
+  description,
+  officialFeeInr,
+  officialTimelineDays,
+  reportCount,
+  areaServed = "India",
+}: GovernmentServiceProps) {
+  const serviceUrl = `${SITE_URL}/services/${slug}`;
+  const offer =
+    officialFeeInr !== null
+      ? {
+          "@type": "Offer",
+          price: officialFeeInr,
+          priceCurrency: "INR",
+          availability: "https://schema.org/InStock",
+          url: serviceUrl,
+        }
+      : undefined;
+
+  return (
+    <JsonLd
+      data={{
+        "@context": "https://schema.org",
+        "@type": "GovernmentService",
+        name,
+        description: description.slice(0, 500),
+        serviceType: department,
+        provider: { "@type": "GovernmentOrganization", name: department },
+        areaServed: { "@type": "Country", name: areaServed },
+        url: serviceUrl,
+        ...(offer ? { offers: offer } : {}),
+        ...(officialTimelineDays !== null
+          ? { serviceOutput: `Official timeline: ${officialTimelineDays} days` }
+          : {}),
+        aggregateRating:
+          reportCount > 0
+            ? {
+                "@type": "AggregateRating",
+                ratingCount: reportCount,
+                bestRating: 5,
+                worstRating: 1,
+              }
+            : undefined,
+      }}
+    />
+  );
+}
+
+/* ───────── FAQ ──────────────────────────────────────────────────────── */
+
+export interface FaqItem {
+  question: string;
+  answer: string;
+}
+
+export function FaqJsonLd({ items }: { items: FaqItem[] }) {
+  if (items.length === 0) return null;
+  return (
+    <JsonLd
+      data={{
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: items.map((item) => ({
+          "@type": "Question",
+          name: item.question,
+          acceptedAnswer: { "@type": "Answer", text: item.answer },
+        })),
+      }}
+    />
+  );
+}
+
+/* ───────── CollectionPage + ItemList ────────────────────────────────── */
+
+export interface CollectionItem {
+  name: string;
+  url: string;
+  description?: string;
+}
+
+export function CollectionPageJsonLd({
+  name,
+  description,
+  url,
+  items,
+}: {
+  name: string;
+  description: string;
+  url: string;
+  items: CollectionItem[];
+}) {
+  return (
+    <JsonLd
+      data={{
+        "@context": "https://schema.org",
+        "@type": "CollectionPage",
+        name,
+        description,
+        url: toAbsoluteUrl(url),
+        isPartOf: { "@type": "WebSite", name: ORG_NAME, url: SITE_URL },
+        mainEntity: {
+          "@type": "ItemList",
+          numberOfItems: items.length,
+          itemListElement: items.map((item, index) => ({
+            "@type": "ListItem",
+            position: index + 1,
+            name: item.name,
+            url: toAbsoluteUrl(item.url),
+            ...(item.description ? { description: item.description } : {}),
+          })),
+        },
+      }}
+    />
+  );
+}
+
+export function ItemListJsonLd({
+  name,
+  items,
+}: {
+  name: string;
+  items: CollectionItem[];
+}) {
+  if (items.length === 0) return null;
+  return (
+    <JsonLd
+      data={{
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        name,
+        numberOfItems: items.length,
+        itemListElement: items.map((item, index) => ({
+          "@type": "ListItem",
+          position: index + 1,
+          name: item.name,
+          url: toAbsoluteUrl(item.url),
+          ...(item.description ? { description: item.description } : {}),
+        })),
+      }}
+    />
+  );
+}
+
+/* ───────── Article ──────────────────────────────────────────────────── */
+
+export function ArticleJsonLd({
+  headline,
+  description,
+  url,
+  datePublished = "2024-01-01",
+  dateModified,
+}: {
+  headline: string;
+  description: string;
+  url: string;
+  datePublished?: string;
+  dateModified?: string;
+}) {
+  return (
+    <JsonLd
+      data={{
+        "@context": "https://schema.org",
+        "@type": "Article",
+        headline,
+        description,
+        url: toAbsoluteUrl(url),
+        author: { "@type": "Organization", name: ORG_NAME },
+        publisher: {
+          "@type": "Organization",
+          name: ORG_NAME,
+          logo: { "@type": "ImageObject", url: `${SITE_URL}/brand/mark.svg` },
+        },
+        datePublished,
+        ...(dateModified ? { dateModified } : {}),
+        mainEntityOfPage: toAbsoluteUrl(url),
+      }}
+    />
+  );
+}

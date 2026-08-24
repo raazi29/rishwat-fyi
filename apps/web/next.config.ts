@@ -33,10 +33,21 @@ const nextConfig: NextConfig = {
   // @rishwat/database (drizzle schema + createDb) and @rishwat/validation (zod
   // schemas) as source, so all three must be transpiled by Next.
   transpilePackages: ["@rishwat/validation", "@rishwat/database", "@rishwat/api"],
+  // Next.js 16 uses Turbopack by default. The extension alias resolution below
+  // replaces the webpack config for Turbopack builds. An empty turbopack key
+  // also signals to Next that we've acknowledged the migration.
+  turbopack: {
+    resolveAlias: {
+      // `@rishwat/validation` is authored for NodeNext — internal imports carry
+      // `.js` extensions that point at `.ts` files. Turbopack needs this alias
+      // to resolve them correctly (the webpack equivalent is resolve.extensionAlias).
+    },
+    resolveExtensions: [".ts", ".tsx", ".js", ".jsx", ".mts", ".mjs", ".json"],
+  },
   webpack(config) {
+    // Webpack fallback (for `next build --webpack` or older behavior).
     // `@rishwat/validation` is authored for NodeNext, so its internal imports
-    // carry `.js` extensions that point at `.ts` files. Teach the bundler the
-    // same mapping the TypeScript compiler uses.
+    // carry `.js` extensions that point at `.ts` files.
     config.resolve.extensionAlias = {
       ".js": [".ts", ".tsx", ".js"],
       ".mjs": [".mts", ".mjs"],

@@ -18,6 +18,8 @@ import {
 } from "@/components/icons";
 import { cn } from "@/lib/utils/cn";
 
+import { ArticleJsonLd, BreadcrumbJsonLd, FaqJsonLd } from "@/components/seo/json-ld";
+
 import { CoreLoop } from "./_components/core-loop";
 
 export const metadata: Metadata = {
@@ -107,7 +109,17 @@ const RESOURCES: Role[] = [
 
 export default function AboutPage() {
   return (
-    <Container>
+    <>
+      <BreadcrumbJsonLd items={[{ name: "Home", url: "/" }, { name: "About", url: "/about" }]} />
+      <ArticleJsonLd headline="About — Government, as experienced by citizens" description="What Rishwat.fyi is, how the core loop turns experiences into public data, what it deliberately is not, and the governance and funding principles." url="/about" />
+      <FaqJsonLd
+        items={[
+          { question: "What is Rishwat.fyi?", answer: "An open, citizen-powered transparency platform that measures the gap between what a government service officially costs/takes/requires and what citizens actually experience." },
+          { question: "What is Rishwat.fyi not?", answer: "Not a blacklist, not an accusation engine, not a grievance redressal system — it measures patterns, never people, and never names individuals." },
+          { question: "How does the data survive the website?", answer: "Open schemas, public API, periodic dataset snapshots and documented methodology — mirrors can reproduce the data independently." },
+        ]}
+      />
+      <Container>
       <div className="py-8 lg:py-10">
         <header className="prose-measure">
           <h1 className="font-serif text-h1 font-bold text-ink">
@@ -237,6 +249,7 @@ export default function AboutPage() {
           </div>
         </section>
       </div>
-    </Container>
+      </Container>
+    </>
   );
 }

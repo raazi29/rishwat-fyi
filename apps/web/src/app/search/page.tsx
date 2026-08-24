@@ -17,6 +17,8 @@ import {
   type ServiceSearchParams,
 } from "@/lib/api";
 
+import { BreadcrumbJsonLd, ItemListJsonLd } from "@/components/seo/json-ld";
+
 import { ComparisonTable } from "@/components/search/comparison-table";
 import { ExportResults } from "@/components/search/export-results";
 import { FiltersSheet } from "@/components/search/filters-sheet";
@@ -35,12 +37,63 @@ import { SearchTopBar } from "@/components/search/search-top-bar";
 // rationale (build must not depend on a live API; the fetch cache still applies).
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: "Search services",
-  description:
-    "Search official government fees, timelines and documents in India and compare them, side by side, with what citizens actually reported experiencing.",
-  alternates: { canonical: "/search" },
-};
+/**
+ * Dynamic metadata: `q` prefixes the title for query-specific ranking,
+ * canonical self-references the sanitised param set so faceted pages
+ * consolidate correctly, and paginated pages get noindex to protect
+ * crawl budget (page 2+ is follow, not index).
+ */
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<RawSearchParams>;
+}): Promise<Metadata> {
+  const params = await searchParams;
+  const read = readSearch(params);
+  const parts: string[] = [];
+  if (read.q) parts.push(`"${read.q}"`);
+  if (read.department) parts.push(read.department);
+  const loc = locationText(read.state, read.district) || read.city;
+  if (loc) parts.push(loc);
+
+  const hasQuery = Boolean(read.q || read.department || read.state || read.district || read.city);
+  const title = read.q
+    ? `${read.q} — Search services`
+    : hasQuery
+      ? `${parts.join(" · ")} — Search services`
+      : "Search services";
+  const description = hasQuery
+    ? `Search results for ${parts.join(", ") || "government services"}: official fees, timelines and citizen-reported experiences compared side by side in India.`
+    : "Search official government fees, timelines and documents in India and compare them, side by side, with what citizens actually reported experiencing.";
+
+  // Sanitised self-canonical: whitelist + sort to avoid duplicate ?q=&q combos
+  const search = new URLSearchParams();
+  if (read.q) search.set("q", read.q);
+  if (read.department) search.set("department", read.department);
+  if (read.state) search.set("state", read.state);
+  if (read.district) search.set("district", read.district);
+  if (read.city) search.set("city", read.city);
+  if (read.sort !== "relevance") search.set("sort", read.sort);
+  if (read.page > 1) search.set("page", String(read.page));
+  const qs = search.toString();
+  const canonical = qs ? `/search?${qs}` : "/search";
+
+  // Paginated or heavily faceted pages should not index but still pass equity
+  const facetCount = [read.department, read.state, read.district, read.city].filter(Boolean).length;
+  const shouldNoIndex = read.page > 1 || facetCount > 2;
+
+  return {
+    title,
+    description: description.slice(0, 300),
+    alternates: { canonical },
+    ...(shouldNoIndex ? { robots: { index: false, follow: true } } : {}),
+    openGraph: {
+      title,
+      description: description.slice(0, 200),
+      url: canonical,
+    },
+  };
+}
 
 const PER_PAGE = 20;
 
@@ -107,8 +160,16 @@ export default async function SearchPage({
 
   const empty = total === 0 || rows.length === 0;
 
+  const breadcrumbItems = [{ name: "Home", url: "/" }, { name: "Search", url: "/search" }];
+  const itemList = !empty && read.page === 1
+    ? rows.slice(0, 10).map((r) => ({ name: r.name, url: `/services/${r.slug}` }))
+    : [];
+
   return (
-    <Container>
+    <>
+      <BreadcrumbJsonLd items={breadcrumbItems} />
+      {itemList.length > 0 ? <ItemListJsonLd name="Search results" items={itemList} /> : null}
+      <Container>
       <div className="space-y-6 py-6 lg:py-8">
         <SearchTopBar query={read.q} location={location} />
 
@@ -179,6 +240,7 @@ export default async function SearchPage({
           </aside>
         </div>
       </div>
-    </Container>
+      </Container>
+    </>
   );
 }

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { ActionLink, Callout } from "@/components/ui";
 import { CodeBlock, DocLayout, DocSection, Prose, type TableOfContentsItem } from "@/components/doc";
+import { ArticleJsonLd, BreadcrumbJsonLd, FaqJsonLd } from "@/components/seo/json-ld";
 import { EyeOffIcon, LockIcon } from "@/components/icons";
 
 export const metadata: Metadata = {
@@ -32,7 +33,30 @@ const NEVER_COLLECTED = [
 
 export default function PrivacyPage() {
   return (
-    <DocLayout
+    <>
+      <BreadcrumbJsonLd items={[{ name: "Home", url: "/" }, { name: "Privacy", url: "/privacy" }]} />
+      <ArticleJsonLd headline="Privacy — Minimal data collection and protection" description="What Rishwat.fyi never collects, what it hashes, the one-time reporter token, 90-day evidence retention, redaction pipeline and do-not-publish list." url="/privacy" />
+      <FaqJsonLd
+        items={[
+          {
+            question: "What personal data does Rishwat.fyi never collect?",
+            answer: "Name, phone number, Aadhaar, PAN, any government ID, home address or exact location — a report can be submitted without any identity at all.",
+          },
+          {
+            question: "How are identifiers protected?",
+            answer: "IP, device fingerprint and submission token are never stored raw — only their HMAC-SHA256 or SHA-256 digests. The database has no raw columns.",
+          },
+          {
+            question: "What if I lose my report token?",
+            answer: "Only the digest is stored, so the token cannot be re-issued. Lose it and you lose status lookup, but the report remains in aggregates anonymously.",
+          },
+          {
+            question: "How long is evidence kept?",
+            answer: "Evidence rows carry retention_until = now + 90 days and are auto-deleted from storage and metadata after expiry.",
+          },
+        ]}
+      />
+      <DocLayout
       title="Privacy"
       lead="Rishwat.fyi's value comes from aggregate patterns — what citizens as a group experience — not from identifying any individual. The whole system is built around minimal data collection: the smallest amount of information that can still produce a meaningful statistic, and then protection even for that."
       toc={TOC}
@@ -210,6 +234,7 @@ export default function PrivacyPage() {
           <ActionLink href="/governance">Why there is no pay-to-remove</ActionLink>
         </div>
       </DocSection>
-    </DocLayout>
+      </DocLayout>
+    </>
   );
 }

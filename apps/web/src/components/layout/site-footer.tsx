@@ -17,6 +17,14 @@ interface FooterColumn {
   links: Array<{ label: string; href: string }>;
 }
 
+const POPULAR_SERVICES: Array<{ label: string; href: string }> = [
+  { label: "Driving Licence", href: "/services/driving-licence" },
+  { label: "Passport", href: "/services/passport" },
+  { label: "GST Registration", href: "/services/gst-registration" },
+  { label: "Land Registration", href: "/services/land-registration" },
+  { label: "Birth Certificate", href: "/services/birth-certificate" },
+];
+
 const FOOTER_COLUMNS: FooterColumn[] = [
   {
     title: "Explore",
@@ -91,6 +99,25 @@ export function SiteFooter() {
             </nav>
           ))}
         </div>
+
+        {/* Popular services — keyword-rich internal linking band for SEO */}
+        <nav aria-label="Popular services" className="mt-10 border-t border-line-inner pt-6">
+          <p className="text-label font-semibold text-ink">Popular services</p>
+          <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-2">
+            {POPULAR_SERVICES.map((link) => (
+              <li key={link.href}>
+                <Link href={link.href} className="text-label text-ink-secondary underline decoration-line-inner underline-offset-4 transition-colors duration-150 hover:text-ink hover:decoration-ink-muted">
+                  {link.label}
+                </Link>
+              </li>
+            ))}
+            <li>
+              <Link href="/search" className="text-label font-medium text-official-mid underline decoration-official-soft underline-offset-4 hover:decoration-official-mid">
+                Search all services →
+              </Link>
+            </li>
+          </ul>
+        </nav>
 
         <div className="mt-10 flex flex-col gap-3 border-t border-line-inner pt-6 text-label text-ink-muted">
           <p className="max-w-[72ch]">{MANDATORY_NOTICE}</p>

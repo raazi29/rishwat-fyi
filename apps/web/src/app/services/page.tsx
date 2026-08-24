@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { Container } from "@/components/layout/container";
 import { ButtonLink, EmptyState, SampleDataStrip } from "@/components/ui";
 import { CompassIcon } from "@/components/icons";
-import { BreadcrumbJsonLd } from "@/components/seo/json-ld";
+import { BreadcrumbJsonLd, CollectionPageJsonLd } from "@/components/seo/json-ld";
 import { getComparisonRows, listDepartments, type ComparisonRow } from "@/lib/api";
 import { DepartmentFilter } from "@/components/service/department-filter";
 import { ServiceGroup } from "@/components/service/service-group";
@@ -13,12 +13,28 @@ import { ServiceGroup } from "@/components/service/service-group";
 // rationale (build must not depend on a live API; the fetch cache still applies).
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: "Government services",
-  description:
-    "Browse the launch catalogue of Indian government services grouped by department, each with its official fee and timeline and the number of citizen reports.",
-  alternates: { canonical: "/services" },
-};
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<RawParams>;
+}): Promise<Metadata> {
+  const department = first((await searchParams).department);
+  if (department) {
+    const pretty = department.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+    return {
+      title: `${pretty} services`,
+      description: `${pretty} government services in India: official fees, timelines, documents and citizen-reported experiences compared side by side.`,
+      alternates: { canonical: `/services?department=${encodeURIComponent(department)}` },
+      openGraph: { title: `${pretty} services · Rishwat.fyi`, url: `/services?department=${encodeURIComponent(department)}` },
+    };
+  }
+  return {
+    title: "Government services",
+    description:
+      "Browse the launch catalogue of Indian government services grouped by department, each with its official fee and timeline and the number of citizen reports.",
+    alternates: { canonical: "/services" },
+  };
+}
 
 type RawParams = Record<string, string | string[] | undefined>;
 
@@ -72,13 +88,31 @@ export default async function ServicesPage({
         groups.length === 1 ? "department" : "departments"
       }`;
 
+  // Build collection items for structured data (first 20)
+  const collectionItems = rows.slice(0, 20).map((r) => ({ name: r.name, url: `/services/${r.slug}` }));
+  const breadcrumbItems = department
+    ? [
+        { name: "Home", url: "/" },
+        { name: "Government services", url: "/services" },
+        { name: activeDepartment ?? department, url: `/services?department=${department}` },
+      ]
+    : [
+        { name: "Home", url: "/" },
+        { name: "Government services", url: "/services" },
+      ];
+
   return (
     <>
-      <BreadcrumbJsonLd
-        items={[
-          { name: "Home", url: "/" },
-          { name: "Government services", url: "/services" },
-        ]}
+      <BreadcrumbJsonLd items={breadcrumbItems} />
+      <CollectionPageJsonLd
+        name={activeDepartment ? `${activeDepartment} services` : "Government services"}
+        description={
+          activeDepartment
+            ? `Official fees, timelines and citizen reports for ${activeDepartment} services in India.`
+            : "The launch catalogue of Indian government services grouped by department, each with its official fee and timeline and the number of citizen reports."
+        }
+        url={department ? `/services?department=${department}` : "/services"}
+        items={collectionItems}
       />
       <Container>
       <div className="space-y-6 py-8 lg:py-10">

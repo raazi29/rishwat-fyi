@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { Container } from "@/components/layout/container";
 import { Callout, NoticeStrip, Panel, SampleDataStrip } from "@/components/ui";
+import { BreadcrumbJsonLd, CollectionPageJsonLd, FaqJsonLd } from "@/components/seo/json-ld";
 import { getStateGaps, listStates } from "@/lib/api";
 import type { StateGap } from "@/lib/api/types";
 import {
@@ -57,8 +58,29 @@ export default async function StatesPage({
   const sample = statesSourced.source === "sample" || gapsSourced.source === "sample";
   const sampleReason = gapsSourced.reason?.message ?? statesSourced.reason?.message;
 
+  const collectionItems = rows.slice(0, 20).map((s) => ({ name: s.name, url: `/states/${s.code}` }));
+  const faqItems = [
+    {
+      question: "What does the state ranking show?",
+      answer: "States are ranked by the median additional amount citizens reported paying beyond the official fee. A higher number means more reports of a gap, not proven corruption.",
+    },
+    {
+      question: "Why do some states show 'Not enough reports yet'?",
+      answer: "Statistics publish only when a state cell has ≥3 reports from ≥2 distinct IP-hash buckets. Below that threshold the median is withheld and the count still shown.",
+    },
+  ];
+
   return (
-    <Container>
+    <>
+      <BreadcrumbJsonLd items={[{ name: "Home", url: "/" }, { name: "States", url: "/states" }]} />
+      <CollectionPageJsonLd
+        name="States"
+        description="Every Indian state ranked by the citizen-reported gap between official government fees and what people actually experienced."
+        url="/states"
+        items={collectionItems}
+      />
+      <FaqJsonLd items={faqItems} />
+      <Container>
       <div className="space-y-8 py-8 lg:py-10">
         <header className="prose-measure">
           <h1 className="font-serif text-h1 font-bold text-ink">States</h1>
@@ -127,6 +149,7 @@ export default async function StatesPage({
           <NoticeStrip />
         </section>
       </div>
-    </Container>
+      </Container>
+    </>
   );
 }

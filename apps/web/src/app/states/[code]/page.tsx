@@ -16,6 +16,7 @@ import { CompassIcon, MapPinIcon, RupeeIcon, UsersIcon } from "@/components/icon
 import { getStateDetail } from "@/lib/api";
 import { formatCount, formatInr } from "@/lib/utils/format";
 import { DistrictList, NotEnoughData, StateServiceTable } from "@/components/geo";
+import { BreadcrumbJsonLd, CollectionPageJsonLd, FaqJsonLd } from "@/components/seo/json-ld";
 
 type Params = Promise<{ code: string }>;
 
@@ -65,8 +66,49 @@ export default async function StateDetailPage({ params }: { params: Params }) {
     },
   ];
 
+  const districtItems = districts.slice(0, 20).map((d) => ({ name: d.name, url: `/states/${state.code}` }));
+  const serviceItems = top_services.slice(0, 10).map((s) => ({ name: s.name, url: `/services/${s.slug}` }));
+
   return (
-    <Container>
+    <>
+      <BreadcrumbJsonLd
+        items={[
+          { name: "Home", url: "/" },
+          { name: "States", url: "/states" },
+          { name: state.name, url: `/states/${state.code}` },
+        ]}
+      />
+      {districts.length > 0 ? (
+        <CollectionPageJsonLd
+          name={`${state.name} districts`}
+          description={`Districts in ${state.name} with citizen-reported government-service gaps.`}
+          url={`/states/${state.code}`}
+          items={districtItems}
+        />
+      ) : null}
+      {serviceItems.length > 0 ? (
+        <CollectionPageJsonLd
+          name={`Top services in ${state.name}`}
+          description={`Services with the largest reported gaps in ${state.name}.`}
+          url={`/states/${state.code}`}
+          items={serviceItems}
+        />
+      ) : null}
+      <FaqJsonLd
+        items={[
+          {
+            question: `What is the median additional amount reported in ${state.name}?`,
+            answer: publishable
+              ? `The median additional amount reported in ${state.name} is ${formatInr(median)} across ${formatCount(gap.report_count)} reports.`
+              : `Not enough reports yet in ${state.name} to publish a median. ${formatCount(gap.report_count)} reports exist, below the ≥3 reports / ≥2 IP buckets threshold.`,
+          },
+          {
+            question: `How many districts in ${state.name} are covered?`,
+            answer: `${formatCount(gap.districts_covered)} districts and ${formatCount(gap.services_covered)} services have citizen reports in ${state.name}.`,
+          },
+        ]}
+      />
+      <Container>
       <PageHeader
         breadcrumbs={crumbs}
         title={state.name}
@@ -117,6 +159,7 @@ export default async function StateDetailPage({ params }: { params: Params }) {
 
         <NoticeStrip />
       </div>
-    </Container>
+      </Container>
+    </>
   );
 }

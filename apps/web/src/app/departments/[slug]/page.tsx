@@ -14,6 +14,7 @@ import {
 } from "@/components/ui";
 import { ArrowRightIcon, CompassIcon, ExternalIcon, SearchIcon } from "@/components/icons";
 import { getComparisonRows, getDepartment, getServiceDetail } from "@/lib/api";
+import { BreadcrumbJsonLd, CollectionPageJsonLd } from "@/components/seo/json-ld";
 import type { GovernmentSource } from "@/lib/api/types";
 import { formatCount, formatDate, humanizeSlug } from "@/lib/utils/format";
 import { ServiceComparisonTable } from "@/components/geo";
@@ -71,8 +72,26 @@ export default async function DepartmentDetailPage({ params }: { params: Params 
     { label: department.name },
   ];
 
+  const collectionItems = rows.slice(0, 20).map((r) => ({ name: r.name, url: `/services/${r.slug}` }));
+
   return (
-    <Container>
+    <>
+      <BreadcrumbJsonLd
+        items={[
+          { name: "Home", url: "/" },
+          { name: "Departments", url: "/departments" },
+          { name: department.name, url: `/departments/${slug}` },
+        ]}
+      />
+      {collectionItems.length > 0 ? (
+        <CollectionPageJsonLd
+          name={`${department.name} services`}
+          description={`Official fees, timelines and citizen reports for services delivered by the ${department.name} in India.`}
+          url={`/departments/${slug}`}
+          items={collectionItems}
+        />
+      ) : null}
+      <Container>
       <PageHeader
         breadcrumbs={crumbs}
         title={department.name}
@@ -176,6 +195,7 @@ export default async function DepartmentDetailPage({ params }: { params: Params 
 
         <NoticeStrip />
       </div>
-    </Container>
+      </Container>
+    </>
   );
 }
