@@ -16,6 +16,32 @@ The product's only real asset is trust. Governance and funding exist to protect 
 
 The roles are intentionally separated: the people who write the code are not the people who decide what the data means, and neither are the people who judge hard moderation cases. That separation is the structural answer to the question "who watches the watchmen."
 
+## Operational status (August 2026)
+
+The governance roles above describe the target state. The current operational
+reality is more limited:
+
+- **Single instance.** The API, database, moderation queue, and admin panel all
+  run on one deployment (Render + Supabase + Vercel). There is no live replica
+  or failover.
+- **No independent mirrors running.** The mirroring infrastructure is documented
+  and the dataset endpoints are public, but no known third party is currently
+  operating a mirror. The "Public mirrors" role is aspirational.
+- **Single maintainer.** Technical maintenance, data stewardship, and moderation
+  are currently performed by the same person.
+
+This means the project has the same single-point-of-failure risk it criticizes:
+if the operator is pressured, incapacitated, or the hosting accounts are
+suspended, the live platform goes dark. The mitigations in place are:
+
+1. The full source, schema, seed data, and methodology are public on GitHub.
+2. Dataset exports are CC BY 4.0 and downloadable without authentication.
+3. The mirroring documentation is complete enough for a third party to stand up
+   an independent instance.
+
+Reducing this gap — attracting independent mirror operators and separating the
+roles — is a priority.
+
 ## Independence
 
 Governance stays independent from individual political parties and government departments (plan §20). That means:

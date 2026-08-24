@@ -17,7 +17,7 @@ import { standardRateLimit, strictRateLimit } from "../middleware/rate-limit.js"
 import { evaluateAbuse } from "../services/abuse.service.js";
 import { findDuplicateGroup } from "../services/duplication.service.js";
 import { clientIp } from "../utils/client-ip.js";
-import { publicReportId, randomToken, sha256Hex } from "../utils/hashing.js";
+import { hmacHex, publicReportId, randomToken, sha256Hex } from "../utils/hashing.js";
 import { redactText } from "../utils/redaction.js";
 import { execRows } from "../utils/sql.js";
 
@@ -88,8 +88,12 @@ reports.post("/", strictRateLimit, async (c) => {
   // Only the digest is ever persisted (PII rule).
   const ip = clientIp(c, c.get("config").trustedProxyHops ?? DEFAULT_TRUSTED_PROXY_HOPS);
   const device = c.req.header("x-device-fingerprint");
-  const ipHash = ip ? sha256Hex(ip) : null;
-  const deviceHash = device ? sha256Hex(device) : null;
+  // HMAC-SHA256, not bare SHA-256: the IPv4 space is only ~4.3B addresses, so an
+  // unkeyed digest is trivially rainbow-tabled back to the raw IP. Keying with a
+  // server-side secret the attacker does not hold defeats that precomputation.
+  const ipHashSecret = c.get("config").ipHashSecret;
+  const ipHash = ip ? hmacHex(ipHashSecret, ip) : null;
+  const deviceHash = device ? hmacHex(ipHashSecret, device) : null;
   const token = randomToken();
 
   // Duplicate detection: attach to an existing near-duplicate group if one is

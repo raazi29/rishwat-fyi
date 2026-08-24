@@ -29,6 +29,7 @@ export async function bootTestApp(): Promise<TestApp> {
   const config: AppConfig = {
     databaseUrl: TEST_DB_URL,
     jwtSecret: 'test-secret-key-for-testing',
+    ipHashSecret: 'test-ip-hash-secret-for-testing',
     port: 0,
     publicBaseUrl: 'http://localhost:8787',
     storage: { driver: 'local', dir: storageDir },

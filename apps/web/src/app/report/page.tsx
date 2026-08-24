@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Share your experience",
   description:
-    "Report your experience of a government service anonymously. No name, phone number, Aadhaar, PAN or address is ever asked. Help build open, verified public data.",
+    "Report your experience of a government service anonymously. No name, phone number, Aadhaar, PAN or address is ever asked. Help build open public data.",
   alternates: { canonical: "/report" },
 };
 

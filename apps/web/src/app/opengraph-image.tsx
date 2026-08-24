@@ -78,7 +78,7 @@ export default function OpengraphImage() {
           </div>
           <div style={{ display: "flex", width: "1px", height: "34px", backgroundColor: LINE, margin: "0 20px" }} />
           <div style={{ display: "flex", fontSize: "19px", color: INK_MUTED }}>
-            Public data. Verified process. Powered by citizens.
+            Public data. Open process. Powered by citizens.
           </div>
         </div>
 

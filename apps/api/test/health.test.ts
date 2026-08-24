@@ -28,6 +28,7 @@ function bootApp(databaseUrl: string, storageDir: string) {
   const config: AppConfig = {
     databaseUrl,
     jwtSecret: "test-secret-key-for-testing",
+    ipHashSecret: "test-ip-hash-secret-for-testing",
     port: 0,
     publicBaseUrl: "http://localhost:8787",
     storage: { driver: "local", dir: storageDir },

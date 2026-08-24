@@ -9,6 +9,14 @@ export type StorageConfig =
 export interface AppConfig {
   databaseUrl: string;
   jwtSecret: string;
+  /**
+   * Server-side secret keying the HMAC-SHA256 of `ip_hash` and
+   * `device_fingerprint_hash`. Unlike a bare SHA-256, an HMAC keyed with a
+   * secret the attacker does not hold cannot be rainbow-tabled back to the raw
+   * IP (the IPv4 space is only ~4.3B addresses). Must be kept secret and stable;
+   * rotating it invalidates every existing hash. `loadConfig` always sets it.
+   */
+  ipHashSecret: string;
   port: number;
   publicBaseUrl: string;
   storage: StorageConfig;
@@ -41,6 +49,11 @@ export const PLACEHOLDER_JWT_SECRET = "change-me-to-a-long-random-string";
 /** Shortest JWT signing secret accepted outside tests. */
 export const MIN_JWT_SECRET_LENGTH = 32;
 
+/** Placeholder shipped in .env.example — must never reach a real deployment. */
+export const PLACEHOLDER_IP_HASH_SECRET = "change-me-to-a-long-random-ip-hash-secret";
+/** Shortest IP-hash HMAC secret accepted outside tests. */
+export const MIN_IP_HASH_SECRET_LENGTH = 32;
+
 type Env = Record<string, string | undefined>;
 
 export function loadConfig(env: Env = process.env): AppConfig {
@@ -67,6 +80,7 @@ export function loadConfig(env: Env = process.env): AppConfig {
 
   const databaseUrl = require("DATABASE_URL");
   const jwtSecret = require("JWT_SECRET");
+  const ipHashSecret = require("IP_HASH_SECRET");
 
   // A weak or placeholder signing secret means forgeable admin tokens. Refuse to
   // boot rather than run a deployment that looks configured but is not.
@@ -76,6 +90,21 @@ export function loadConfig(env: Env = process.env): AppConfig {
     } else if (jwtSecret.length < MIN_JWT_SECRET_LENGTH) {
       missing.push(
         `JWT_SECRET (too short: ${jwtSecret.length} chars, need >= ${MIN_JWT_SECRET_LENGTH})`,
+      );
+    }
+  }
+
+  // A weak or placeholder IP-hash secret defeats the reason ip_hash and
+  // device_fingerprint_hash are HMACed instead of plain SHA-256: without a secret
+  // the attacker lacks, the ~4.3B-address IPv4 space can be precomputed and every
+  // ip_hash reversed to the raw IP. Same strength rule as JWT_SECRET; relaxed
+  // under tests so fixtures can use a short throwaway value.
+  if (!isTest && ipHashSecret !== "") {
+    if (ipHashSecret === PLACEHOLDER_IP_HASH_SECRET) {
+      missing.push("IP_HASH_SECRET (still the .env.example placeholder — generate a real secret)");
+    } else if (ipHashSecret.length < MIN_IP_HASH_SECRET_LENGTH) {
+      missing.push(
+        `IP_HASH_SECRET (too short: ${ipHashSecret.length} chars, need >= ${MIN_IP_HASH_SECRET_LENGTH})`,
       );
     }
   }
@@ -168,6 +197,7 @@ export function loadConfig(env: Env = process.env): AppConfig {
   return {
     databaseUrl,
     jwtSecret,
+    ipHashSecret,
     port,
     publicBaseUrl: env.PUBLIC_BASE_URL ?? `http://localhost:${port}`,
     storage,

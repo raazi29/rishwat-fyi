@@ -11,6 +11,7 @@ const storageDir = fs.mkdtempSync(path.join(os.tmpdir(), "rishwat-security-heade
 const config: AppConfig = {
   databaseUrl: "postgres://unused.invalid/test",
   jwtSecret: "test-secret-key-for-security-header-test",
+  ipHashSecret: "test-ip-hash-secret-for-security-header-test",
   port: 0,
   publicBaseUrl: "http://localhost:8787",
   storage: { driver: "local", dir: storageDir },

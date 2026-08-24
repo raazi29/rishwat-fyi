@@ -69,7 +69,7 @@ export function SiteFooter() {
               Government, as experienced by citizens.
             </p>
             <p className="mt-2 text-label text-ink-muted">
-              Public data. Verified process. Powered by citizens.
+              Public data. Open process. Powered by citizens.
             </p>
           </div>
 

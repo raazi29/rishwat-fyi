@@ -253,7 +253,7 @@ export const NEVER_EXPORTED: DefinitionItem[] = [
       { label: "Exported", value: "No" },
       { label: "Privacy", value: "internal" },
     ],
-    description: "SHA-256 digest of the reporter's IP. Used only for abuse and duplicate signals; never selected into an export.",
+    description: "HMAC-SHA256 digest of the reporter's IP. Used only for abuse and duplicate signals; never selected into an export.",
   },
   {
     id: "col-device_fingerprint_hash",
@@ -262,7 +262,7 @@ export const NEVER_EXPORTED: DefinitionItem[] = [
       { label: "Exported", value: "No" },
       { label: "Privacy", value: "internal" },
     ],
-    description: "SHA-256 digest of the device fingerprint. Never selected into an export.",
+    description: "HMAC-SHA256 digest of the device fingerprint. Never selected into an export.",
   },
   {
     id: "col-submission_token_hash",

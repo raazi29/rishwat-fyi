@@ -20,7 +20,7 @@ export function SiteHeader() {
           <BrandLogo />
           <span aria-hidden="true" className="hidden h-8 w-px bg-line xl:block" />
           <span className="hidden text-micro leading-tight text-ink-muted xl:block">
-            Public data. Verified process.
+            Public data. Open process.
             <br />
             Powered by citizens.
           </span>

@@ -39,7 +39,7 @@ const STEPS: Step[] = [
     n: 4,
     icon: <ChartIcon />,
     title: "Public data",
-    body: "Verified insights are published openly for everyone to use.",
+    body: "Moderated data is published openly for everyone to use.",
   },
 ];
 
@@ -76,7 +76,7 @@ export function HowItWorks() {
               How it works
             </h2>
             <p className="mt-3 text-body text-ink-secondary">
-              We turn government process information and citizen experiences into verified public
+              We turn government process information and citizen experiences into open public
               data.
             </p>
             <ActionLink href="/methodology" className="mt-4">
