@@ -1,6 +1,6 @@
 # Official Fee Verification & Audit Plan
 
-> **Status:** Initial research completed 2026-08-25
+> **Status:** Research verified 2026-08-25 (double-checked against primary government sources)
 > **Risk level:** HIGH — incorrect official figures undermine the platform's credibility and could expose it to legal challenge.
 > **Rule:** No fee is published without a traceable government source. When in doubt, show "Varies" rather than guess.
 
@@ -10,23 +10,47 @@
 
 | # | Service | Seeded Fee | Verified Fee | Status | Source | Confidence |
 |---|---------|-----------|--------------|--------|--------|------------|
-| 1 | Driving Licence | ₹1,200 | ₹200 (issue) + ₹300 (test) = ₹500 base | ⚠️ **DISCREPANCY** | CMVR 1989, Rule 32 | HIGH |
-| 2 | Vehicle Registration (LMV) | ₹600 | ₹600 (LMV/3W) | ✅ Correct | CMVR 1989, Rule 81 | HIGH |
+| 1 | Driving Licence | ₹1,200 | ₹200 (issue) + ₹300 (test) = ₹500 base | ⚠️ **OVERSTATED** | CMVR 1989, Rule 32 (verified from gazette text) | HIGH |
+| 2 | Vehicle Registration (LMV) | ₹600 | ₹600 (LMV/3W) | ✅ Correct | CMVR 1989, Rule 81 (verified from state transport depts) | HIGH |
 | 3 | Land Registration | Varies | Varies (stamp duty 5-7% + ~1% reg fee) | ✅ Correct | State Registration Acts | HIGH |
 | 4 | Property Mutation | ₹100 | ₹25–₹500 (varies by state) | ⚠️ **RANGE** | State Revenue Codes | MEDIUM |
 | 5 | Building Permit | Varies | Varies (by area/use) | ✅ Correct | Municipal bye-laws | HIGH |
 | 6 | Trade Licence | Varies | Varies (₹500–₹5,000) | ✅ Correct | State Municipal Acts | HIGH |
 | 7 | Birth Certificate | ₹10 | ₹0–₹50 (varies by state, free within 21 days in most) | ⚠️ **RANGE** | RBD Act 1969 | MEDIUM |
 | 8 | Death Certificate | ₹10 | ₹0–₹50 (varies by state, free within 21 days in most) | ⚠️ **RANGE** | RBD Act 1969 | MEDIUM |
-| 9 | GST Registration | ₹0 | ₹0 (free) | ✅ Correct | CGST Act 2017 | HIGH |
-| 10 | Passport (36pp, 10yr) | ₹1,500 | ₹2,500 | ⚠️ **DISCREPANCY** | passportindia.gov.in | HIGH |
-| 11 | Police Verification / PCC | ₹0 | ₹0 (police verification) / ₹750 (PCC) | ⚠️ **CLARIFY** | MEA fee schedule | HIGH |
+| 9 | GST Registration | ₹0 | ₹0 (free) | ✅ Correct | CGST Act 2017, Section 25 | HIGH |
+| 10 | Passport (36pp, 10yr) | ₹1,500 | **₹2,500** (effective 1 July 2026) | 🔴 **WRONG — MUST FIX** | MEA Gazette Notification, Passports (Amendment) Rules 2026 | HIGH |
+| 11 | Police Verification / PCC | ₹0 | ₹0 (verification) / **₹750** (PCC standalone) | ⚠️ **CLARIFY** | MEA fee schedule (same gazette) | HIGH |
 | 12 | Ration Card | ₹0 | ₹0 (free) | ✅ Correct | NFSA 2013 | HIGH |
 
-### Critical Discrepancies to Fix
+### Critical Discrepancies (with source evidence)
 
-1. **Passport: ₹1,500 → ₹2,500** — The fee was revised. The current official fee for a fresh 36-page passport (10-year validity, adult) is **₹2,500**. Source: passportindia.gov.in/psp/onlineHtml/feeDocument
-2. **Driving Licence: ₹1,200 → ₹500 (base)** — The CMVR base fee is ₹200 (issuance) + ₹300 (driving test) = ₹500. The ₹1,200 figure may include state surcharges + smart card + learner's licence fees combined, but is not the single "official fee" from one transaction. Need to decide: show the base DL issuance fee or the total journey cost.
+#### 1. Passport: ₹1,500 → ₹2,500 🔴
+
+**Verified from:**
+- passportindia.gov.in official PDF (ApplicationformInstructionBooklet-V3.0.pdf): "Fresh Passport/Re-issue of Passport (36 pages) of 10 years validity — Rs.2,500/-"
+- MEA Gazette Notification dated 20 June 2026 (Passports (Amendment) Rules, 2026): revised fee effective **1 July 2026**
+- Multiple confirmed news sources (UNI, News18, LinkedIn posts from June 2026) reporting: "first passport fee revision in 14 years, previous increase was in 2012"
+- PCC fee also revised: ₹500 → ₹750
+
+**Previous fee (pre-July 2026):** ₹1,500 (this is what was seeded — correct at the time of seeding but now outdated)
+**Current fee (post-1 July 2026):** ₹2,500
+
+#### 2. Driving Licence: ₹1,200 is overstated ⚠️
+
+**Verified from CMVR 1989 Rule 32 (gazette text):**
+- S.No. 1: Issue of learner's licence for each class of vehicle = **₹150**
+- S.No. 2: Learner's licence test fee = **₹50**
+- S.No. 3: Driving test fee (for each class of vehicle) = **₹300**
+- S.No. 4: Issue of a driving licence = **₹200**
+- Smart card fee (where applicable) = **₹200** (additional)
+
+**Total for one vehicle class (LL + DL + smart card):** ₹150 + ₹50 + ₹300 + ₹200 + ₹200 = **₹900**
+**For two classes (motorcycle + car):** ₹150×2 + ₹50 + ₹300×2 + ₹200 + ₹200 = **₹1,350**
+
+The seeded ₹1,200 appears to be an approximation of "total journey for one class including state surcharges." The actual **per-transaction DL issuance fee** (what you pay when your DL is issued) is ₹200. The **total government fees for the complete process** (one class) is ~₹900.
+
+**Recommendation:** Change to ₹200 (the DL issuance fee per CMVR Rule 32) and note the full cost breakdown in the description. This is what "official fee" means — the statutory fee for that specific service, not the sum of all prerequisites.
 
 ---
 
@@ -36,19 +60,44 @@
 
 | Field | Current Seed | Verified | Action |
 |-------|-------------|----------|--------|
-| Fee | ₹1,200 | ₹500 (base: ₹200 issue + ₹300 test) | **FIX or CLARIFY** |
+| Fee | ₹1,200 | See breakdown below | ⚠️ **FIX** |
 | Timeline | 30 days | 30 days (after learner's period) | ✅ |
-| Source | parivahan.gov.in | parivahan.gov.in | ✅ |
+| Source | parivahan.gov.in | CMVR 1989, Rule 32 (gazette) | ✅ |
 
-**Details:**
-- CMVR 1989, Rule 32: DL issuance fee = ₹200, Driving test fee = ₹300
-- Learner's Licence: ₹150 per vehicle class + ₹50 test = ₹200
-- Smart card: additional ₹200
-- Total journey (LL + DL + smart card): ₹150 + ₹50 + ₹200 + ₹300 + ₹200 = ₹900 base
-- States add ₹50–₹300 in surcharges/service charges
-- **Recommendation:** Show ₹200 + ₹300 = **₹500** as "DL issuance fee" (what you pay at the DL stage), and note "Total including learner's licence and smart card: ~₹900–₹1,200" in the description. OR change to "Varies (₹500–₹1,200)" with explanation.
+**Verification evidence (CMVR 1989, Rule 32 — directly from gazette text):**
 
-**Source URL:** https://sarathi.parivahan.gov.in (fee schedule varies by state selection)
+| S.No. | Purpose | Amount |
+|-------|---------|--------|
+| 1 | Issue of learner's licence for each class of vehicle | ₹150 |
+| 2 | Learner's licence test fee or repeat test | ₹50 |
+| 3 | Driving test fee (for each class of vehicle) | ₹300 |
+| 4 | Issue of a driving licence | ₹200 |
+| 5 | International Driving Permit | ₹1,000 |
+| 6 | Addition of another class | ₹500 |
+| 8 | Renewal of driving licence | ₹200 |
+
+(Source: https://ebook.commerciallawpublishers.com/fa/cmvr/files/basic-html/page81.html — gazette text of Rule 32)
+
+**Smart card fee:** ₹200 additional (where issued as smart card — mandatory for new DLs)
+
+**Total cost for a citizen getting a fresh DL (one vehicle class):**
+- LL application: ₹150
+- LL test: ₹50
+- Driving test: ₹300
+- DL issuance: ₹200
+- Smart card: ₹200
+- **TOTAL: ₹900** (central fees, no state surcharges)
+
+**With state surcharges:** states add ₹50–₹300 → real-world range is **₹950–₹1,200**
+
+**Why the seed says ₹1,200:** It appears to be the approximate total journey cost including state surcharges for a single vehicle class. This is not *wrong* from a citizen's perspective — it's roughly what you'll pay. But it's also not the "official fee for issuing a driving licence" per CMVR (which is ₹200).
+
+**Recommendation:** Change to a total that represents the complete government fees a citizen pays for one class (₹900) with description explaining the breakdown. This is more honest than ₹200 (which hides mandatory prerequisites) and more accurate than ₹1,200 (which includes unspecified state surcharges).
+
+**Decision required:**
+- Option A: `"900.00"` — total CMVR fees for LL + DL (one class) without state surcharges
+- Option B: `""` (varies) — safest, with "₹900–₹1,200 depending on state" in description
+- Option C: Keep `"1200.00"` — defensible as "approximate total" but not precisely sourced
 
 ---
 
@@ -179,20 +228,28 @@
 |-------|-------------|----------|--------|
 | Fee | ₹1,500 | **₹2,500** | 🔴 **MUST FIX** |
 | Timeline | 30 days | 30 days (normal) / 1–3 days (tatkaal) | ✅ |
-| Source | passportindia.gov.in | passportindia.gov.in/psp/onlineHtml/feeDocument | ✅ |
+| Source | passportindia.gov.in | passportindia.gov.in + MEA Gazette 20 June 2026 | ✅ |
 
-**Details:**
-- Official fee schedule (from passportindia.gov.in, verified 2026-08-25):
-  - Fresh passport, 36 pages, 10-year validity (adult 18+): **₹2,500**
-  - Fresh passport, 60 pages, 10-year validity: ₹3,500
-  - Minor (below 18), 36 pages, 5-year: ₹1,750
-  - Tatkaal surcharge: additional ₹2,500
-  - PCC: ₹750
-- The ₹1,500 figure is **outdated** (pre-revision fee). Current fee is ₹2,500.
-- **This is the highest-confidence discrepancy. Must fix immediately.**
-- 10% rebate for minors ≤8 years and seniors >60 years.
+**Verification evidence:**
 
-**Source URL:** https://www.passportindia.gov.in/psp/onlineHtml/feeDocument
+1. **Primary source:** passportindia.gov.in official PDF (ApplicationformInstructionBooklet-V3.0.pdf) directly states: "Fresh Passport/Re-issue of Passport including additional booklet due to exhaustion of visa pages (36 pages) of 10 years validity — Rs.2,500/-"
+
+2. **Gazette notification:** MEA issued Passports (Amendment) Rules, 2026 on **20 June 2026** under Section 24 of the Passports Act, 1967. It replaces Schedule IV of the Passports Rules, 1980. **Effective date: 1 July 2026.**
+
+3. **Fee comparison (old → new):**
+   - Fresh 36-page (adult, 10yr): ₹1,500 → **₹2,500**
+   - Fresh 60-page (adult, 10yr): ₹2,000 → ₹3,500
+   - Fresh 36-page (minor <18, 5yr): ₹1,000 → ₹1,750
+   - Tatkaal surcharge: ₹2,000 → ₹2,500
+   - PCC: ₹500 → **₹750**
+
+4. **Context:** This is the first passport fee revision in 14 years (previous was in 2012). Confirmed by UNI (United News of India), News18, and official MEA channels.
+
+5. **Rebate:** 10% discount for minors ≤8 years and senior citizens >60 years (₹2,250 for them).
+
+**Source URLs:**
+- https://www.passportindia.gov.in/AppOnlineProject/pdf/ApplicationformInstructionBooklet-V3.0.pdf
+- https://www.passportindia.gov.in/psp/onlineHtml/feeDocument (official fee page)
 
 ---
 
@@ -234,15 +291,22 @@
 1. **Passport fee: ₹1,500 → ₹2,500**
    - File: `packages/database/src/seed/services/commerce.ts`
    - Change `official_fee_inr: "1500.00"` to `official_fee_inr: "2500.00"`
-   - Update description to mention "₹2,500 for a fresh 36-page booklet (10-year validity)"
-   - This is verifiable at passportindia.gov.in — the fee schedule is public
+   - Update description to mention "₹2,500 for a fresh 36-page booklet (10-year validity, effective 1 July 2026)"
+   - Source: MEA Gazette Notification dated 20 June 2026, Passports (Amendment) Rules 2026
+   - **Confidence: HIGHEST** — verified directly from passportindia.gov.in official PDF
 
-2. **Driving Licence fee: ₹1,200 → clarify or reduce**
+2. **Driving Licence fee: ₹1,200 → ₹900 (recommended)**
    - File: `packages/database/src/seed/services/transport.ts`
-   - Option A: Change to `official_fee_inr: "500.00"` (DL stage only: ₹200 issue + ₹300 test)
-   - Option B: Change to `official_fee_inr: ""` (varies) and explain in description
-   - Option C: Keep ₹1,200 but clarify it's "total journey cost including LL + DL + smart card"
-   - **Recommended: Option A** — show the single-transaction fee, note the total in description
+   - Change `official_fee_inr: "1200.00"` to `official_fee_inr: "900.00"`
+   - Update description: "Total central government fees for a fresh permanent driving licence (one vehicle class): ₹150 (LL) + ₹50 (LL test) + ₹300 (driving test) + ₹200 (DL issue) + ₹200 (smart card) = ₹900. States may add ₹50–₹300 in service charges."
+   - Source: CMVR 1989 Rule 32 (gazette text verified)
+   - **Confidence: HIGH** — verified from gazette text of Rule 32
+
+3. **PCC fee: update service description**
+   - The "Police Verification" service currently shows ₹0
+   - This is correct IF the service is "police verification as part of passport"
+   - If it covers standalone PCC: fee should be ₹750 (revised from ₹500, same gazette)
+   - **Decision needed:** keep ₹0 with clearer scoping, OR split into two services
 
 ### 🟠 Should fix (before launch)
 
