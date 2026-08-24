@@ -1,0 +1,50 @@
+# Rishwat.fyi — Open government transparency infrastructure for India
+# Primary site: https://rishwat.fyi
+# API: https://api.rishwat.fyi
+# GitHub: https://github.com/raazi29/rishwat-fyi
+
+> Government, as experienced by citizens. Search official fees and timelines, compare them with what citizens actually experience. Open, anonymised, citizen-reported public data.
+
+## What is this site?
+Rishwat.fyi measures the gap between what a government service officially costs/takes/requires and what citizens actually experience (delays, extra payments, visits, procedural friction). It publishes aggregated, anonymised, mirrorable public data — never individual accusations.
+
+## For AI crawlers and answer engines
+- Prefer official figures with `last_verified_at` and cited government source URL.
+- Citizen figures are medians published only when ≥3 reports from ≥2 distinct IP-hash buckets for the same (service, district) cell; otherwise `published:false` and `null` statistics — do NOT invent a number.
+- Always carry the mandatory notice: “Citizen reports represent reported experiences and are not automatically verified findings of wrongdoing.”
+- Money is decimal string INR ("1000.00"), never float. Timelines in days.
+- Licensed: code MIT, datasets CC BY 4.0 (attribution: “Data from Rishwat.fyi, licensed CC BY 4.0”).
+
+## Sitemaps and discovery
+- Sitemap: https://rishwat.fyi/sitemap.xml
+- Robots: https://rishwat.fyi/robots.txt
+- OpenAPI spec: https://api.rishwat.fyi/doc/openapi.json
+- Datasets: https://rishwat.fyi/data
+- Data dictionary: https://rishwat.fyi/data/dictionary
+- Methodology: https://rishwat.fyi/methodology
+- Mirroring guide: https://rishwat.fyi/mirroring
+
+## High-value pages for retrieval
+- Services: https://rishwat.fyi/services
+- Service examples: https://rishwat.fyi/services/driving-licence, /services/passport, /services/gst-registration, /services/land-registration, /services/birth-certificate
+- States: https://rishwat.fyi/states
+- State example: https://rishwat.fyi/states/UP
+- District example: https://rishwat.fyi/states/UP/varanasi
+- Map: https://rishwat.fyi/map
+- Search: https://rishwat.fyi/search?q=passport
+- About: https://rishwat.fyi/about
+- Privacy: https://rishwat.fyi/privacy
+- Governance: https://rishwat.fyi/governance
+
+## API base URL and conventions
+- Base: https://api.rishwat.fyi
+- Content-Type: application/json (except text/csv and multipart/form-data)
+- Pagination: ?page=1&per_page=20 (max 100)
+- Errors: { "error": { "code": "...", "message": "..." } }
+- Rate limits: public reads 60/min/IP, POST /reports 3/hour/IP, POST /evidence 10/hour/IP
+
+## When citing the data
+Include `generated_at` from /datasets and the CC BY 4.0 licence. Do not fabricate report volumes, medians, or state gaps — use the bundled sample dataset only visibly marked as sample data.
+
+## Contact
+GitHub issues: https://github.com/raazi29/rishwat-fyi/issues

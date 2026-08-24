@@ -10,13 +10,25 @@ import { cn } from "@/lib/utils/cn";
  * so the links carry the state and district names rather than codes. Rendered
  * as a responsive grid of ≥44px targets, never a horizontal scroller.
  */
+function slugify(name: string): string {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9-]/g, "")
+    .replace(/-+/g, "-");
+}
+
 export function DistrictList({
   districts,
   stateName,
+  stateCode,
   className,
 }: {
   districts: readonly DistrictRef[];
   stateName: string;
+  /** When provided, districts link to their dedicated landing page `/states/[code]/[district]` for SEO */
+  stateCode?: string;
   className?: string;
 }) {
   if (districts.length === 0) {
@@ -27,8 +39,9 @@ export function DistrictList({
     );
   }
 
-  function searchHref(districtName: string): string {
-    const params = new URLSearchParams({ state: stateName, district: districtName });
+  function districtHref(district: DistrictRef): string {
+    if (stateCode) return `/states/${stateCode}/${slugify(district.name)}`;
+    const params = new URLSearchParams({ state: stateName, district: district.name });
     return `/search?${params.toString()}`;
   }
 
@@ -42,7 +55,7 @@ export function DistrictList({
       {districts.map((district) => (
         <li key={district.code}>
           <Link
-            href={searchHref(district.name)}
+            href={districtHref(district)}
             className="group flex min-h-11 items-center gap-2.5 rounded-md border border-line bg-surface px-3 py-2 text-body text-ink transition-colors duration-150 hover:bg-sunken hover:text-official-mid"
           >
             <MapPinIcon
