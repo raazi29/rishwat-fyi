@@ -1,0 +1,99 @@
+name: maintenance
+
+# The three jobs docs/production-setup.md §Scheduled jobs requires. Without
+# them: aggregate_metrics stays empty so no published figure is ever refreshed,
+# below-threshold cells never auto-corroborate, and evidence is not deleted at
+# 90 days -- which is a promise docs/privacy.md makes to reporters.
+#
+# These call the admin job endpoints over HTTPS rather than running the scripts
+# with DATABASE_URL, so CI never needs database credentials or network access to
+# Supabase. The only secrets required are an admin account's own credentials.
+#
+# Required repository secrets (Settings -> Secrets and variables -> Actions):
+#   API_BASE_URL    e.g. https://rishwat-fyi.onrender.com   (no trailing slash)
+#   ADMIN_EMAIL     an account with the `admin` role
+#   ADMIN_PASSWORD  that account's password
+#
+# Jobs are admin-only (apps/api/src/routes/admin/jobs.ts), so a moderator
+# account will get 403 here.
+
+on:
+  schedule:
+    # Hourly, a few minutes past the hour to avoid the top-of-hour rush.
+    - cron: "7 * * * *"
+    # Daily at 02:20 UTC for the evidence purge.
+    - cron: "20 2 * * *"
+  workflow_dispatch:
+    inputs:
+      run_purge:
+        description: "Also run the evidence purge"
+        type: boolean
+        default: false
+
+jobs:
+  maintenance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Sign in and run scheduled jobs
+        env:
+          API_BASE_URL: ${{ secrets.API_BASE_URL }}
+          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          # The daily cron and an explicit dispatch opt-in are the only times
+          # evidence is purged; the hourly run must never delete anything.
+          RUN_PURGE: ${{ github.event.schedule == '20 2 * * *' || inputs.run_purge }}
+        run: |
+          set -euo pipefail
+
+          for key in API_BASE_URL ADMIN_EMAIL ADMIN_PASSWORD; do
+            if [ -z "${!key:-}" ]; then
+              echo "::error::Missing required secret $key. See the header of this workflow."
+              exit 1
+            fi
+          done
+
+          base="${API_BASE_URL%/}"
+
+          # Render's free tier sleeps; give the instance a chance to wake before
+          # authenticating so a cold start is not mistaken for bad credentials.
+          echo "Waking $base ..."
+          curl -fsS --max-time 90 --retry 3 --retry-all-errors --retry-delay 10 \
+            "$base/health" >/dev/null || {
+              echo "::error::API did not become healthy at $base/health"
+              exit 1
+            }
+
+          echo "Authenticating ..."
+          token="$(
+            jq -n --arg e "$ADMIN_EMAIL" --arg p "$ADMIN_PASSWORD" \
+              '{email:$e,password:$p}' \
+            | curl -fsS --max-time 60 -X POST "$base/admin/login" \
+                -H 'content-type: application/json' --data @- \
+            | jq -r '.token'
+          )"
+          if [ -z "$token" ] || [ "$token" = "null" ]; then
+            echo "::error::Login failed -- check ADMIN_EMAIL / ADMIN_PASSWORD and that the account has the admin role."
+            exit 1
+          fi
+          echo "Authenticated."
+
+          run_job() {
+            echo "POST /admin/jobs/$1"
+            curl -fsS --max-time 300 -X POST "$base/admin/jobs/$1" \
+              -H "authorization: Bearer $token" | jq -c '.' || {
+                echo "::error::Job $1 failed"
+                exit 1
+              }
+          }
+
+          run_job recompute-aggregates
+          run_job corroborate
+
+          if [ "${RUN_PURGE}" = "true" ]; then
+            run_job purge-evidence
+          else
+            echo "Skipping purge-evidence (runs on the daily schedule only)."
+          fi
+
+          echo "Maintenance complete."
