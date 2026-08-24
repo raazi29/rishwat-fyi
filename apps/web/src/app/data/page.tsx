@@ -76,7 +76,7 @@ export default async function DataPage() {
             <div className="min-w-0">
               <p className="font-sans text-h3 font-semibold text-ink">reports</p>
               <p className="mt-1 max-w-prose text-body text-ink-secondary">
-                The full public dataset of verified, anonymised citizen reports.
+                The full public dataset of published, anonymised citizen reports.
               </p>
               <dl className="mt-4 flex flex-wrap gap-x-8 gap-y-3 text-label">
                 <div>

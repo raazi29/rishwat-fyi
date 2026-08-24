@@ -7,7 +7,12 @@ export const moderationDecisionSchema = z
     public_id: publicIdSchema,
     action: z.enum(["mark_validated", "reject", "acknowledge_officially", "withdraw"]),
     reason: z.string().max(1000).optional(),
-    source_url: z.string().url().max(2048).optional(),
+    source_url: z
+      .string()
+      .url()
+      .max(2048)
+      .refine((u) => /^https?:\/\//i.test(u), { message: "Only http/https URLs are allowed" })
+      .optional(),
   })
   .refine((d) => d.action !== "acknowledge_officially" || d.source_url, {
     message: "source_url is required when acknowledging officially",
