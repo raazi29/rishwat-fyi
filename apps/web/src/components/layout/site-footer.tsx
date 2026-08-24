@@ -60,7 +60,7 @@ export function SiteFooter() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="border-t border-line bg-sunken">
+    <footer className="border-t border-line bg-sunken pb-[env(safe-area-inset-bottom)]">
       <Container className="py-12">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.4fr_repeat(4,minmax(0,1fr))]">
           <div className="max-w-xs">

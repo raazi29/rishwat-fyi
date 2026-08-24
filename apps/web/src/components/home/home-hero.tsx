@@ -60,7 +60,9 @@ function ActionCard({
       href={href}
       className={cn(
         "group flex items-center gap-3 rounded-lg border border-line bg-surface p-4",
-        "transition-[background-color,border-color,transform] duration-150 hover:border-official-mid hover:bg-sunken active:translate-y-px focus-visible:bg-sunken",
+        "shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-all duration-150",
+        "hover:border-official-mid hover:bg-sunken hover:shadow-[0_3px_8px_rgba(0,0,0,0.06)] active:translate-y-px active:shadow-sm",
+        "focus-visible:bg-sunken",
       )}
     >
       <IconTile tone="sand">{icon}</IconTile>

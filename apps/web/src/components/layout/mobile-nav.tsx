@@ -107,7 +107,7 @@ export function MobileNav({ className }: { className?: string }) {
               )}
             </nav>
 
-            <div className="shrink-0 border-t border-line p-4">
+            <div className="shrink-0 border-t border-line p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
               <ButtonLink href="/report" variant="primary" block>
                 Report anonymously
               </ButtonLink>

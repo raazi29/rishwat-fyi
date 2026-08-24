@@ -7,27 +7,29 @@ export type ButtonVariant = "primary" | "secondary" | "quiet" | "ghost";
 export type ButtonSize = "sm" | "md" | "lg";
 
 /**
- * The public-record control language: a compact 8px radius, a clearly official
- * green primary action, and restrained press feedback. Cards own borders; only
- * overlays own shadows, so controls use colour and a one-pixel press instead of
- * generic pill shapes, scaling, or hover lift.
+ * The public-record control language: a compact 12px radius, a clearly official
+ * green primary action with a subtle inner highlight, and restrained press
+ * feedback. The primary button has a gentle shadow that lifts on hover;
+ * secondary uses a refined border with a hair-shadow. Cards own heavy borders;
+ * controls use colour, subtle depth, and a one-pixel press.
  */
 const BASE =
-  "inline-flex select-none items-center justify-center gap-2 rounded-xl font-semibold transition-[background-color,border-color,color,transform] duration-150 ease-out disabled:cursor-not-allowed disabled:opacity-50 disabled:transform-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50";
+  "inline-flex select-none items-center justify-center gap-2 rounded-xl font-semibold transition-all duration-150 ease-out disabled:cursor-not-allowed disabled:opacity-50 disabled:transform-none disabled:shadow-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50";
 
 const VARIANTS: Record<ButtonVariant, string> = {
-  primary: "bg-official text-ink-inverse hover:bg-official-deep active:translate-y-px",
+  primary:
+    "bg-official text-ink-inverse shadow-[0_1px_2px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.08)] hover:bg-official-deep hover:shadow-[0_2px_6px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.1)] active:translate-y-px active:shadow-[0_0px_1px_rgba(0,0,0,0.1)]",
   secondary:
-    "border border-line bg-surface text-ink hover:border-official-mid hover:bg-sunken active:translate-y-px",
+    "border border-line bg-surface text-ink shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:border-official-mid hover:bg-sunken hover:shadow-[0_2px_4px_rgba(0,0,0,0.06)] active:translate-y-px active:shadow-none",
   quiet:
     "text-official-mid underline decoration-transparent decoration-[1.5px] underline-offset-4 hover:text-official-deep hover:decoration-current active:translate-y-px",
   ghost: "text-ink-secondary hover:bg-sunken hover:text-ink active:translate-y-px",
 };
 
 const SIZES: Record<ButtonSize, string> = {
-  sm: "min-h-9 px-4 text-label pointer-coarse:min-h-11",
-  md: "min-h-11 px-[18px] text-label",
-  lg: "min-h-12 px-6 text-body",
+  sm: "min-h-9 px-4 text-label tracking-[-0.01em] pointer-coarse:min-h-11",
+  md: "min-h-11 px-5 text-label tracking-[-0.01em]",
+  lg: "min-h-[52px] px-7 text-body tracking-[-0.01em]",
 };
 
 interface CommonProps {

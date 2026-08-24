@@ -184,6 +184,9 @@
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+    /* Prevent horizontal overflow on mobile — a defensive measure so no rogue
+       element ever introduces a sideways scroll on phones. */
+    overflow-x: hidden;
   }
 
   h1,

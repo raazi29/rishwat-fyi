@@ -13,7 +13,10 @@ import { Breadcrumbs, type Crumb } from "@/components/ui/breadcrumbs";
 export function Container({ className, children, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn("mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-10", className)}
+      className={cn(
+        "mx-auto w-full max-w-[1440px] px-[max(1rem,env(safe-area-inset-left))] sm:px-6 lg:px-10",
+        className,
+      )}
       {...props}
     >
       {children}

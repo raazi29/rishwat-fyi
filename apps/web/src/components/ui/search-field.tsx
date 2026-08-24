@@ -44,8 +44,8 @@ export function SearchField({
       role="search"
       aria-label="Search government services"
       className={cn(
-        "flex rounded-2xl border border-line bg-surface transition-[border-color,background-color] duration-150",
-        "hover:border-official-mid focus-within:border-official-mid focus-within:ring-2 focus-within:ring-official-mid",
+        "flex rounded-2xl border border-line bg-surface shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-all duration-150",
+        "hover:border-official-mid hover:shadow-[0_2px_6px_rgba(0,0,0,0.06)] focus-within:border-official-mid focus-within:shadow-[0_2px_8px_rgba(0,0,0,0.08)] focus-within:ring-2 focus-within:ring-official-mid/20",
         isBar
           ? "flex-col items-stretch sm:h-[52px] sm:flex-row sm:items-stretch"
           : "h-13 items-stretch sm:h-14",
@@ -89,7 +89,8 @@ export function SearchField({
         type="submit"
         className={cn(
           "m-1 inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl bg-official font-semibold text-ink-inverse",
-          "transition-[background-color,transform] duration-150 hover:bg-official-deep active:translate-y-px",
+          "shadow-[0_1px_2px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.08)]",
+          "transition-all duration-150 hover:bg-official-deep hover:shadow-[0_2px_6px_rgba(0,0,0,0.18)] active:translate-y-px active:shadow-sm",
           isBar ? "px-5 text-label" : "px-5 text-label sm:px-6 sm:text-body",
         )}
       >

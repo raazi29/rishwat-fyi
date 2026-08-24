@@ -14,7 +14,7 @@ import { ThemeToggle } from "@/components/layout/theme-toggle";
  */
 export function SiteHeader() {
   return (
-    <header className="sticky top-0 z-40 border-b border-line bg-paper">
+    <header className="sticky top-0 z-40 border-b border-line bg-paper pt-[env(safe-area-inset-top)]">
       <Container className="flex h-16 items-center justify-between gap-3 sm:gap-4">
         <div className="flex min-w-0 items-center gap-3">
           <BrandLogo />

@@ -15,7 +15,7 @@
 
 import type { ApiErrorBody, ApiErrorCode } from "./types";
 
-const DEFAULT_TIMEOUT_MS = 6000;
+const DEFAULT_TIMEOUT_MS = 12000;
 
 export type DataSource = "api" | "sample";
 
