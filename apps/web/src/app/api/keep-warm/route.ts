@@ -3,24 +3,29 @@ import { NextResponse } from "next/server";
 /**
  * Keep-warm cron target.
  *
- * The API (Render) and its managed Postgres (Supabase pooler) both cold-start
- * after an idle stretch: the first request in ~15 minutes can take 15-25s while
- * the dyno wakes and the pooler opens connections. During that window a real
- * visitor's page would drop to the "Sample data" banner — a fake-looking site
- * for a transparency platform.
+ * The API is a Render Web Service (https://rishwat-fyi.onrender.com). On
+ * Render's free/starter tiers the service spins DOWN after ~15 minutes of
+ * inactivity, and the next request pays a 30-50s cold boot while the container
+ * restarts and its managed Postgres (Supabase pooler) reconnects. During that
+ * window a real visitor's page drops to the "Sample data" banner — a
+ * fake-looking site for a transparency platform.
  *
  * This route is hit by a Vercel Cron every 10 minutes (see apps/web/vercel.json).
- * It makes one cheap GET to the API's /health endpoint, which runs a trivial
- * `select 1` against Postgres — enough to keep the dyno and the pooler warm so
- * the first human visitor after idle is served a live page, not a fallback.
+ * It makes one cheap GET to the API's /health endpoint (a trivial `select 1`),
+ * keeping the Render service awake so the first human visitor after idle is
+ * served a live page, not a fallback.
  *
- * It is deliberately side-effect-free and unauthenticated-safe: it only performs
- * an outbound GET and returns a small JSON status. It never mutates data.
+ * It is side-effect-free: it only performs an outbound GET and returns a small
+ * JSON status. It never mutates data.
  */
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+// Prefer the explicit server-side API origin; fall back to the browser-facing
+// one, then localhost for dev. In production this MUST resolve to the Render
+// origin (https://rishwat-fyi.onrender.com) so the cron actually keeps the
+// backend warm rather than pinging the Next.js app itself.
 const API_BASE_URL =
   process.env.API_BASE_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8787";
 
