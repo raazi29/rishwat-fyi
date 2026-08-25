@@ -11,6 +11,7 @@
   "scripts": {
     "db:migrate": "tsx --env-file-if-exists=../../.env src/migrate.ts",
     "db:seed": "tsx --env-file-if-exists=../../.env src/seed/index.ts",
+    "db:sync-services": "tsx --env-file-if-exists=../../.env src/sync-services.ts",
     "generate": "drizzle-kit generate",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
