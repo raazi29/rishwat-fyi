@@ -35,8 +35,8 @@ export const commerceServices: ServiceSeed[] = [
     name: "Passport (Fresh / Reissue)",
     departmentSlug: "passport-seva",
     description:
-      "Issue of an Indian passport through Passport Seva. The fee for a fresh 36-page normal booklet is ₹1500 (tatkal and 60-page booklets cost more).",
-    official_fee_inr: "1500.00",
+      "Issue of an Indian passport through Passport Seva. The fee for a fresh 36-page normal booklet (10-year validity) is ₹2,500 (revised w.e.f. 1 July 2026; tatkal adds ₹2,500; 60-page booklet is ₹3,500). 10% rebate for minors ≤8 years and senior citizens >60 years.",
+    official_fee_inr: "2500.00",
     official_timeline_days: 30,
     official_visits: 1,
     official_documents: [

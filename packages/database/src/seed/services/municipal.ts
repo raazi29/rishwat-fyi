@@ -34,8 +34,8 @@ export const municipalServices: ServiceSeed[] = [
     name: "Birth Certificate",
     departmentSlug: "municipal",
     description:
-      "Registration of a birth and issue of a birth certificate under the Registration of Births and Deaths Act, 1969. Registration is free within 21 days; a nominal late fee applies thereafter.",
-    official_fee_inr: "10.00",
+      "Registration of a birth and issue of a birth certificate under the Registration of Births and Deaths Act, 1969. Registration is free within 21 days (CRS Official FAQ); a late fee of ₹100–₹500 applies thereafter depending on state and delay. A nominal fee of ₹10–₹50 may apply for obtaining certified copies.",
+    official_fee_inr: "0.00",
     official_timeline_days: 21,
     official_visits: 1,
     official_documents: [
@@ -60,8 +60,8 @@ export const municipalServices: ServiceSeed[] = [
     name: "Death Certificate",
     departmentSlug: "municipal",
     description:
-      "Registration of a death and issue of a death certificate under the Registration of Births and Deaths Act, 1969. Registration is free within 21 days; a nominal late fee applies thereafter.",
-    official_fee_inr: "10.00",
+      "Registration of a death and issue of a death certificate under the Registration of Births and Deaths Act, 1969. Registration is free within 21 days (CRS Official FAQ); a late fee of ₹100–₹500 applies thereafter depending on state and delay. A nominal fee of ₹10–₹50 may apply for obtaining certified copies.",
+    official_fee_inr: "0.00",
     official_timeline_days: 21,
     official_visits: 1,
     official_documents: [

@@ -7,8 +7,8 @@ export const transportServices: ServiceSeed[] = [
     name: "Driving Licence",
     departmentSlug: "transport",
     description:
-      "Issue of a permanent driving licence for a motor vehicle under the Motor Vehicles Act, 1988 and CMV Rules, 1989, preceded by a learner's licence and a driving test.",
-    official_fee_inr: "1200.00",
+      "Issue of a permanent driving licence for a motor vehicle under the Motor Vehicles Act, 1988 and CMV Rules, 1989, preceded by a learner's licence and a driving test. Total government fees for one vehicle class: ₹150 (LL) + ₹50 (LL test) + ₹300 (driving test) + ₹200 (DL issue) + ₹200 (smart card) = ₹900. States may add ₹50–₹300 in service charges.",
+    official_fee_inr: "900.00",
     official_timeline_days: 30,
     official_visits: 2,
     official_documents: [
