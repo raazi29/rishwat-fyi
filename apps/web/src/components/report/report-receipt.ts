@@ -76,3 +76,24 @@ export function clearReceipt(): void {
     /* ignore */
   }
 }
+
+/**
+ * In-memory fallback for the receipt. This survives a same-page client
+ * navigation (router.push) but not a full page reload — which is fine because
+ * sessionStorage also wouldn't survive a reload to a new server-rendered page
+ * without client state. The two mechanisms are complementary: memory covers
+ * the storage-unavailable case, storage covers the page-was-reloaded case.
+ */
+let memoryReceipt: ReportReceipt | null = null;
+
+export function setMemoryReceipt(receipt: ReportReceipt): void {
+  memoryReceipt = receipt;
+}
+
+export function getMemoryReceipt(): ReportReceipt | null {
+  return memoryReceipt;
+}
+
+export function clearMemoryReceipt(): void {
+  memoryReceipt = null;
+}

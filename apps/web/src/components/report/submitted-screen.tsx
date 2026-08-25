@@ -21,7 +21,7 @@ import {
 } from "@/components/icons";
 import { formatDateTime } from "@/lib/utils/format";
 
-import { loadReceipt, type ReportReceipt } from "./report-receipt";
+import { clearMemoryReceipt, getMemoryReceipt, loadReceipt, type ReportReceipt } from "./report-receipt";
 import { SubmittedTimeline } from "./submitted-timeline";
 import { StatusCheckInline } from "./status-check-inline";
 
@@ -30,7 +30,13 @@ export function SubmittedScreen({ sampleReceipt }: { sampleReceipt: ReportReceip
   const [receipt, setReceipt] = useState<ReportReceipt | null>(null);
 
   useEffect(() => {
-    setReceipt(loadReceipt());
+    // Try the in-memory hand-off first (covers sessionStorage being unavailable
+    // in private mode / on quota / when disabled), then fall back to storage.
+    const fromMemory = getMemoryReceipt();
+    const fromStorage = loadReceipt();
+    setReceipt(fromMemory ?? fromStorage);
+    // Clear the in-memory copy after reading — it has served its purpose.
+    if (fromMemory) clearMemoryReceipt();
     setMounted(true);
   }, []);
 

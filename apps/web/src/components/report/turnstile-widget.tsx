@@ -105,6 +105,12 @@ export interface TurnstileWidgetProps {
   /** Receives the solved token, or `null` when it expires, errors, or resets. */
   onVerify: (token: string | null) => void;
   /**
+   * Called when Turnstile's script fails to load or never initialises (blocked
+   * by an ad-blocker, corporate proxy, or region). Lets the parent offer a
+   * fallback instead of leaving the user stuck at a check that never renders.
+   */
+  onBlocked?: () => void;
+  /**
    * Bump this (e.g. increment a counter) to discard the current token and issue
    * a fresh challenge — needed after a failed submit, since a Turnstile token is
    * single-use and a reused one always fails verification.
@@ -115,13 +121,17 @@ export interface TurnstileWidgetProps {
   className?: string;
 }
 
-export function TurnstileWidget({ onVerify, resetKey, action, className }: TurnstileWidgetProps) {
+export function TurnstileWidget({ onVerify, onBlocked, resetKey, action, className }: TurnstileWidgetProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | null>(null);
   // Hold the latest callback in a ref so changing it never re-runs the render
   // effect (which would tear down and re-mount the widget on every parent render).
   const onVerifyRef = useRef(onVerify);
   onVerifyRef.current = onVerify;
+  // Same pattern for onBlocked: hold it in a ref so changing it never re-runs
+  // the render effect (which would tear down and re-mount the widget).
+  const onBlockedRef = useRef(onBlocked);
+  onBlockedRef.current = onBlocked;
 
   useEffect(() => {
     if (!SITE_KEY) return;
@@ -144,9 +154,11 @@ export function TurnstileWidget({ onVerify, resetKey, action, className }: Turns
         });
       })
       .catch(() => {
-        // Script blocked or never initialised. We deliberately do NOT hand back a
-        // token: when the API requires a CAPTCHA it will reject a tokenless
-        // submit, which is the correct fail-closed behaviour.
+        // Script blocked or never initialised (ad-blocker, corporate proxy,
+        // region). We deliberately do NOT hand back a token — failing closed is
+        // correct — but we DO notify the parent so it can offer a fallback path
+        // instead of leaving the user stuck at a check that never renders.
+        if (onBlockedRef.current) onBlockedRef.current();
       });
 
     return () => {

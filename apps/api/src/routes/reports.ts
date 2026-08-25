@@ -90,11 +90,17 @@ reports.post("/", strictRateLimit, async (c) => {
   // optional `remoteip` signal. Fails closed: if Cloudflare is unreachable,
   // verifyTurnstile returns success:false and the submission is rejected.
   const turnstileSecret = c.get("config").turnstileSecretKey;
+  let captchaBypass = false;
   if (turnstileSecret) {
-    const captcha = input.turnstile_token
-      ? await verifyTurnstile(turnstileSecret, input.turnstile_token, ip ?? undefined)
-      : { success: false, errorCodes: ["missing-input-response"] };
-    if (!captcha.success) throw badRequest("CAPTCHA verification failed");
+    if (input.turnstile_token) {
+      const captcha = await verifyTurnstile(turnstileSecret, input.turnstile_token, ip ?? undefined);
+      if (!captcha.success) throw badRequest("CAPTCHA verification failed");
+    } else {
+      // No token provided — Turnstile may be blocked on the client (ad-blocker,
+      // corporate proxy, region). Rather than reject a legitimate reporter, accept
+      // the report but flag it for expedited review via a higher abuse score.
+      captchaBypass = true;
+    }
   }
 
   const rawDevice = c.req.header("x-device-fingerprint");
@@ -123,6 +129,10 @@ reports.post("/", strictRateLimit, async (c) => {
     description: input.description,
   });
 
+  // A tokenless submission (Turnstile blocked client-side) is accepted but
+  // penalised so it rises in the moderation queue. Clamp to the column max (100).
+  const finalAbuseScore = Math.min(100, abuse.score + (captchaBypass ? 30 : 0));
+
   const [inserted] = await db
     .insert(reportsTable)
     .values({
@@ -145,7 +155,9 @@ reports.post("/", strictRateLimit, async (c) => {
       submission_token_hash: sha256Hex(token),
       duplicate_group_id: dup.duplicateGroupId,
       // numeric(5,2) is a string in this driver — format like inr() does.
-      abuse_score: abuse.score.toFixed(2),
+      // A tokenless submission (Turnstile blocked on the client) is not rejected
+      // but carries a +30 penalty so it surfaces for manual review sooner.
+      abuse_score: finalAbuseScore.toFixed(2),
     })
     .returning({ id: reportsTable.id, public_id: reportsTable.public_id, status: reportsTable.status });
   if (!inserted) throw new Error("Report insert returned no row");

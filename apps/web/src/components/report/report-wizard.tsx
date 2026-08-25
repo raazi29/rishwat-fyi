@@ -22,7 +22,7 @@ import {
   saveDraft,
 } from "./wizard-logic";
 import { stepForField, validatePayload, validateStep } from "./wizard-validation";
-import { saveReceipt, type ReportReceipt } from "./report-receipt";
+import { loadReceipt, saveReceipt, setMemoryReceipt, type ReportReceipt } from "./report-receipt";
 import { submitReportAction, uploadEvidenceAction } from "./actions";
 import { TrustRail } from "./trust-rail";
 import { StepServiceLocation } from "./steps/step-service-location";
@@ -50,6 +50,10 @@ export function ReportWizard({ geo, apiAvailable = true }: { geo: WizardGeo; api
   // a Turnstile token is single-use, so a reused one always fails verification.
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [captchaReset, setCaptchaReset] = useState(0);
+  // Set when Turnstile's script is blocked/unavailable (ad-blocker, corporate
+  // proxy, region). We then let the user submit without a token; the API accepts
+  // the tokenless report but boosts its abuse score so it gets expedited review.
+  const [turnstileBlocked, setTurnstileBlocked] = useState(false);
   const [draftSaved, setDraftSaved] = useState(false);
   const [live, setLive] = useState("");
   const headingRef = useRef<HTMLLegendElement>(null);
@@ -118,6 +122,20 @@ export function ReportWizard({ geo, apiAvailable = true }: { geo: WizardGeo; api
   };
 
   const handleSubmit = async () => {
+    // Guard against a double-submission (e.g. a retry after an ambiguous or lost
+    // Guard against double-submission after a retry (e.g. the first attempt
+    // succeeded but the response was lost and the user hit submit again). Only
+    // blocks within 60 seconds of the previous submission so a legitimate second
+    // report filed in the same tab isn't short-circuited.
+    const existingReceipt = loadReceipt();
+    if (existingReceipt && !existingReceipt.sample) {
+      const age = Date.now() - new Date(existingReceipt.submittedAt).getTime();
+      if (age < 60_000) {
+        router.push("/report/submitted");
+        return;
+      }
+    }
+
     if (!apiAvailable) {
       saveDraft(state.data, state.step);
       setLive("Live reporting is temporarily unavailable. Your draft is saved on this device.");
@@ -133,11 +151,12 @@ export function ReportWizard({ geo, apiAvailable = true }: { geo: WizardGeo; api
       return;
     }
 
-    // When Turnstile is enabled we must hold a solved token before submitting —
-    // the API rejects a tokenless report, so gate here with a clear message
-    // rather than letting it fail server-side. Skipped entirely when Turnstile
-    // is not configured (the widget renders nothing and no token is expected).
-    if (TURNSTILE_ENABLED && !turnstileToken) {
+    // When Turnstile is enabled and its widget is present but not yet solved,
+    // ask the user to complete it before submitting. Skipped when Turnstile is
+    // not configured (the widget renders nothing and no token is expected) OR
+    // when the script is blocked (turnstileBlocked): we then submit without a
+    // token and the API accepts it with a higher abuse score for expedited review.
+    if (TURNSTILE_ENABLED && !turnstileToken && !turnstileBlocked) {
       dispatch({
         type: "submitError",
         failure: {
@@ -195,6 +214,10 @@ export function ReportWizard({ geo, apiAvailable = true }: { geo: WizardGeo; api
         location,
       };
       saveReceipt(receipt);
+      // Also hand the receipt off in-memory: covers the case where sessionStorage
+      // is unavailable (private mode / quota / disabled), so the confirmation
+      // screen can still show the one-time token after this client navigation.
+      setMemoryReceipt(receipt);
       clearDraft();
       router.push("/report/submitted");
       return;
@@ -280,7 +303,9 @@ export function ReportWizard({ geo, apiAvailable = true }: { geo: WizardGeo; api
                   goto={goto}
                   evidenceFile={evidenceFile}
                   onTurnstileVerify={setTurnstileToken}
+                  onTurnstileBlocked={() => setTurnstileBlocked(true)}
                   turnstileResetKey={captchaReset}
+                  turnstileBlocked={turnstileBlocked}
                 />
               ) : null}
             </div>

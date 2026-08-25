@@ -70,14 +70,20 @@ export function StepReview({
   goto,
   evidenceFile,
   onTurnstileVerify,
+  onTurnstileBlocked,
   turnstileResetKey,
+  turnstileBlocked,
 }: StepProps & {
   goto: (step: number) => void;
   evidenceFile: File | null;
   /** Receives the Turnstile token (or null when it clears/expires). */
   onTurnstileVerify: (token: string | null) => void;
+  /** Called when Turnstile's script is blocked/unavailable, to show a fallback. */
+  onTurnstileBlocked: () => void;
   /** Bumped by the wizard after a failed submit to force a fresh challenge. */
   turnstileResetKey: number;
+  /** True once Turnstile is detected as blocked — renders the fallback notice. */
+  turnstileBlocked: boolean;
 }) {
   const sel = resolveSelections(data, geo);
   const department = geo.departments.find((d) => d.slug === data.departmentSlug)?.name ?? null;
@@ -163,10 +169,18 @@ export function StepReview({
           <div className="mt-3">
             <TurnstileWidget
               onVerify={onTurnstileVerify}
+              onBlocked={onTurnstileBlocked}
               resetKey={turnstileResetKey}
               action="report_submit"
             />
           </div>
+          {turnstileBlocked ? (
+            <Callout tone="notice" className="mt-3">
+              <span className="font-semibold">Verification unavailable.</span>{" "}
+              Your browser or network is blocking the security check. You can still submit — your
+              report will go through additional review.
+            </Callout>
+          ) : null}
         </section>
       ) : null}
     </div>
