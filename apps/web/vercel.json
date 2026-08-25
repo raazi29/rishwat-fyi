@@ -3,5 +3,11 @@
   "framework": "nextjs",
   "installCommand": "test -d packages/database && npm install -w apps/web -w apps/api -w packages/database -w packages/validation --include-workspace-root || (cd ../.. && npm install -w apps/web -w apps/api -w packages/database -w packages/validation --include-workspace-root)",
   "buildCommand": "next build",
-  "outputDirectory": ".next"
+  "outputDirectory": ".next",
+  "crons": [
+    {
+      "path": "/api/keep-warm",
+      "schedule": "*/10 * * * *"
+    }
+  ]
 }

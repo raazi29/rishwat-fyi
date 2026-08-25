@@ -15,7 +15,15 @@
 
 import type { ApiErrorBody, ApiErrorCode } from "./types";
 
-const DEFAULT_TIMEOUT_MS = 12000;
+// 28s, not 12s: the API runs against a managed Postgres (Supabase) whose
+// connection pooler can cold-start on the first request after an idle stretch,
+// taking 15-25s to answer. A 12s budget fired mid-cold-start and dropped the
+// whole page to the "Sample data" banner — the worst possible look for a
+// transparency platform. 28s stays under Vercel's 30s serverless ceiling while
+// giving a cold pooler room to wake. Cached ISR responses (revalidate) mean
+// only the FIRST request after idle pays this; every subsequent visitor is
+// served the warm, cached page.
+const DEFAULT_TIMEOUT_MS = 28000;
 
 export type DataSource = "api" | "sample";
 
